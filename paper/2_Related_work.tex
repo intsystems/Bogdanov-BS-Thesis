@@ -1,0 +1,162 @@
+%%% Related work %%%
+
+\section{Related work} \label{Related_work}
+
+    It will be rewritten because the topic has changed in the process.
+
+\begin{comment}
+
+    In these section we will show related work in context of gradient approximation (one and two points feedback), zero-oracle methods and Frank-Wolfe algorithm.
+
+    \subsection{Gradient approximation}\label{Gradient_approximation}
+    
+        There are a lot of papers about how to approximate the gradient \cite{ermoliev1976methods, nemirovskij1983problem, agarwal2010optimal, agarwal2011stochastic}. The most popular methods are:
+    
+        \begin{enumerate}
+            \item \textbf{Approximation of the gradient through finite differences (two-point feedback)} \cite{shamir2017optimal, Randomized_gradient_free_methods_in_convex_optimization}. 
+    
+            In this papers authors used randomized smoothing for the non-smooth objective 
+    
+            \begin{equation*}
+                \label{f_gamma}
+                f_{\gamma}(x, \xi) = \mathbb{E}_u\left[f(x + \gamma u, \xi)\right]
+            \end{equation*}
+    
+            where $u \sim RB^d_2(1)$, i.e., $u$ is random vector uniformly distributed on a unit euclidean ball $B_2^d(1)$.
+            
+            True gradient was estimated by:
+    
+            \begin{equation}
+                \label{nabla(f)_gamma_tpf}
+                \nabla f_{\gamma}(x, \xi, e) = d \dfrac{f(x+\gamma e, \xi) - f(x - \gamma e, \xi)}{2 \gamma} e
+            \end{equation}
+    
+            where $e \sim RB^d_2(1)$.
+    
+            So they got these results:
+    
+            \begin{theorem} \label{th_1}
+                For all $x, y \in Q$ and $\xi \sim D$ fulfilled what
+    
+                \begin{enumerate}
+                    \item[$\bullet$] $f(x, \xi)$ is bounded by $f_{\gamma}(x, \xi)$:
+                    
+                    \begin{equation}
+                        \label{prop_f_g_1_tpf}
+                        f(x, \xi) \leq f_{\gamma}(x, \xi) \leq f(x) + \gamma M_2
+                    \end{equation}
+    
+                    where $M_2$ is constant satisfying $\mathbb{E_\xi}\left\|\nabla f_{\gamma}(x, \xi)\right\|_2^2 \leq M_2^2$ for all $x \in Q$.
+    
+                    \item[$\bullet$] $f(x, \xi)$ has $L = \frac{\sqrt{d}M}{\gamma}$-Lipschitz gradient:
+    
+                    \begin{equation}
+                        \label{prop_f_g_2_tpf}
+                        \left\|\nabla f_{\gamma}(y, \xi) - \nabla f_{\gamma}(x, \xi)\right\|_q \leq L \left\|y - x\right\|_p,
+                    \end{equation}
+    
+                    where $1/p + 1/q = 1$
+    
+                    \item[$\bullet$] $\nabla f_{\gamma}(x, \xi, e)$ is an unbiased approximation for $\nabla f_{\gamma}(x, \xi, e)$:
+                    
+                    \begin{equation*}
+                        \mathbb{E}_{e, \xi}\left[\nabla f_{\gamma}(x, e, \xi)\right] = \nabla f_{\gamma}(x)
+                    \end{equation*}
+    
+                    \item[$\bullet$] $\nabla f_{\gamma}(x, \xi, e)$ has bounded variance:
+                    
+                    \begin{equation}
+                        \label{prop_nabla_f_g_2_tpf}
+                        \mathbb{E}_e\left[\left\| \nabla f_{\gamma}(x, e)\right\|_q^2\right] \leq \sqrt{2} \min\{q, \ln d\} d^{2/q}M_2^2
+                    \end{equation}
+                \end{enumerate}
+            \end{theorem}
+    
+            All proofs you can find in \cite{Randomized_gradient_free_methods_in_convex_optimization}
+    
+            Other authors \cite{nesterov2017random, nemirovskij1983problem} used slightly different approximation of gradient:
+    
+            \begin{equation}
+                \label{other_aprox_two_point}
+                \nabla f_{\gamma}(x, \xi, e) = d \dfrac{f(x+\gamma e, \xi) - f(x, \xi)}{\gamma} e
+            \end{equation}
+    
+            So they got this result:
+    
+            \begin{equation*}
+                \mathbb{E}_e\left[\left\| \nabla f_{\gamma}(x, e, \xi) \right\|_q^2\right] \leq M_2^2 (d+4)^2
+            \end{equation*}
+    
+            All proofs you can find in \cite{nemirovskij1983problem}. We wouldn't use this approximation in this paper.
+    
+            \item \textbf{Approximation of the gradient through finite differences (one-point feedback)} \cite{gasnikov2017stochastic, nemirovskij1983problem}.
+    
+            If the two-point feedback \eqref{f_gamma}, \eqref{other_aprox_two_point} is unavailable, we can approximate gradient by using the unbiased estimate \cite{Randomized_gradient_free_methods_in_convex_optimization, gasnikov2017stochastic}:
+            
+            \begin{equation}
+                \label{nabla(f)_gamma_opf}
+                \nabla f_{\gamma}(x, \xi, e) = d \dfrac{f(x+\gamma e, \xi)}{\gamma}e
+            \end{equation}
+    
+            This approximation is similar to \eqref{nabla(f)_gamma_tpf} and has related properties:
+    
+            \begin{theorem} \label{th_2}
+                $\nabla f_{\gamma}(x, \xi, e)$ has bounded variance:
+                \begin{equation}
+                    \label{prop_nabla_f_g_opf}
+                    \mathbb{E}_e\left[\left\| \nabla f_{\gamma}(x, e, \xi) \right\|_q^2\right] \leq 
+                    \left\{\begin{array}{l}
+                         \dfrac{(q-1)d^{1 + 2/q}G^2}{\gamma^2}, \quad q \in \left[2, 2 \ln d\right] \\
+                         \\
+                         \dfrac{4d(\ln d)G^2}{\gamma^2}, \quad q \in (2 \ln d, +\infty)
+                    \end{array}\right.
+                \end{equation}
+    
+                where $\gamma = \frac{\varepsilon}{2 M_2}$ ($\varepsilon$ is accuracy of solving problem) and $G$ is such that $\mathbb{E}_{\xi}\left[|f(x, \xi)|^2\right] \leq G^2$ for all $x \in Q$.
+            \end{theorem}
+    
+            All proofs you can find in \cite{gasnikov2017stochastic}.
+          
+        \end{enumerate}
+
+    \subsection{Zero-order algorithms}\label{Zero_order_methods}
+
+        The most popular method to solve problem is to take some first-order method (i.e. it uses true gradient of the function) and approximate it with the formulas like \eqref{nabla(f)_gamma_tpf} and \eqref{nabla(f)_gamma_opf} \cite{Randomized_gradient_free_methods_in_convex_optimization, akhtar2022zeroth, nesterov2017random, gasnikov2017stochastic}.
+
+        But there are also algorithms that do not use this method, for example COBYLA \cite{powell1994direct} and Bayesian optimization \cite{hernandez2016general}.
+
+    \subsection{Frank-Wolfe algorithms} \label{FW_algorithms}
+
+        This algorithm solves problem under assumptions that
+        
+        \begin{enumerate}
+            \item $Q$ is convex and compact set with diameter $D$
+
+            \item Function $f(x, \xi)$ are $L$-smooth for all $x \in Q$ and $\xi \sim D$
+
+            \item The variance of the stochastic gradient $\nabla f(x, \xi)$ is bounded under $\sigma^2$
+        \end{enumerate}
+
+        The main idea of this algorithm is that we don't calculate projection on a set $Q$ on every step of gradient decent (because it's often difficult), but calculate
+
+        \begin{equation*}
+            \arg\underset{s \in Q}{\min} \left<s, \nabla f(x^k)\right>
+        \end{equation*}
+
+        The simplest Frank-Wolfe algorithm can be described as follows: 
+
+        \begin{algorithm}
+            \caption{Simplest Frank-Wolfe Algorithm}\label{simple_FW}
+            \begin{algorithmic}
+                \Ensure $x^0 \in Q$
+                \For{k = 0, ..., K}
+                    \State $s \gets \arg\underset{s \in Q}{\min} \left<s, \nabla f(x^k)\right>$
+
+                    \State $x^{k+1} \gets (1 - \gamma)x^k + \gamma s, \quad \text{ for } \gamma = \frac{2}{k+2}$
+                \EndFor
+            \end{algorithmic}
+        \end{algorithm}
+
+        There are a lot of modifications for this method \cite{hou2022distributed, sahu2019towards, akhtar2022zeroth} in this paper we will use momentum-based method from \cite{hou2022distributed}.
+
+\end{comment}

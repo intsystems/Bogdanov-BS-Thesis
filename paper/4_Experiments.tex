@@ -1,0 +1,57 @@
+%%% Experiments %%%
+
+\section{Experiments}
+
+    It hasn't been written yet, because the code doesn't work.
+
+    \begin{comment}
+    
+    In our experiments\footnotemark we will apply our zero-order method from Subsection \ref{zo method} to Momentum-Based Frank-Wolfe algorithm from Subsection \ref{mbfw}, Frank-Wolfe algorithm from \cite{jaggi2013revisiting}, Stochastic Mirror Descent algorithm \cite{d2021stochastic} and Gradient Descend with Euclidean projection.
+
+    \footnotetext{\href{https://github.com/Dd0-s/BachelorThesis/tree/main/code}{GitHub}}
+
+    \begin{table}[!ht]
+        \centering
+        \begin{tabular}{|c|c|c|}
+
+        \hline
+            Algorithm & $N(L, \sigma^2, \varepsilon)$ & $T(L, \sigma^2, \varepsilon)$\\ \hline 
+            
+            MBFW \cite{akhtar2022zeroth} & $\mathcal{O}\left(\left[\frac{8 \sqrt{3} D + 41 L D^2}{\varepsilon}\right]^2\right)$ & $\mathcal{O}\left(\left[\frac{8 \sqrt{3} D + 41 L D^2}{\varepsilon}\right]^2\right)$\\ [0.1cm]\hline
+
+            FW \cite{frank1956algorithm} & $\mathcal{O}\left(\frac{LD^2}{\varepsilon}\right)$ & $M_s\footnotemark \cdot \mathcal{O}\left(\frac{LD^2}{\varepsilon} \right)$\\ [0.2cm]\hline 
+            
+            SMD \cite{d2021stochastic} & $\mathcal{O}\left(\frac{L(B_{\psi}\footnotemark (x^*, x_1) + \sigma^2)}{\varepsilon}\right)$ & $\mathcal{O}\left(\frac{L(B_{\psi}(x^*, x_1) + \sigma^2)}{\varepsilon}
+            \right)$\\ [0.15cm] \hline
+
+            Projection \cite{frei2007geometry} & $\mathcal{O}\left(\frac{2 L (f(x^0) - f(x^*))}{\varepsilon}\right)$ & $P_s\footnotemark \cdot \mathcal{O}\left(\frac{2 L (f(x^0) - f(x^*))}{\varepsilon}\right)$\\ [0.2cm] \hline 
+        
+        \end{tabular}\\
+        
+        \caption{$N$ and $L$ for considered algorithms}
+    \end{table}
+
+    \footnotetext{Number of oracle calls at each step during argmin computing.}
+    \footnotetext{Bregman divergence with respect to $\psi$}
+    \footnotetext{Number of oracle calls at each step during projection computing.}
+
+    
+
+    \subsection{Quadratic function}
+        In this experiment we consider
+
+        \begin{equation}
+            \label{f Q ex1}
+            f(x, \xi) = \left<Ax, x\right> + \xi \quad \text{ and } \quad Q = \Delta_d,
+        \end{equation}
+
+        where $A \in S^d_{++}$, $\xi \sim \mathcal{N}(0, \sigma^2)$ and $\Delta_d$ - is $d$-dimensional probabilistic simplex.
+
+        We will sample $e$ from \eqref{nabla(f)_gamma_tpf} and \eqref{nabla(f)_gamma_opf} randomly from $B_1^{\|\cdot\|_1}$ and $B_1^{\|\cdot\|_2}$, fix batch size: $B = 1$. And use gap-convergence criterion:
+
+        \begin{equation}
+            \label{gap}
+            \text{gap}(x^k) = \max_{y \in \triangle_d} \langle \nabla f(x^k), x^k - y \rangle,
+        \end{equation}
+
+    \end{comment}
