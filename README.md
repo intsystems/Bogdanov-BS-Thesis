@@ -22,7 +22,7 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 # Content
 
-This repository provides code for reproducing experiments that were performed as part of scientific work in the fall semester of 2023. If you run Experiments.ipynb in the code directory, you will reproduce the experimental results obtained in the article. 
+This repository provides code for reproducing experiments that were performed as part of scientific work in the fall semester of 2023. If you run [Experiments.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Experiments.ipynb) in the code directory, you will reproduce the experimental results obtained in the article. 
 
 ![JAGUAR](./code/figures/Non-stochastics.png)
 
