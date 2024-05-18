@@ -21,7 +21,7 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 # Содержание
 
-В этом репозитории представлен код для воспроизведения экспериментов, которые были выполнены в рамках выпускной квалификационной работы. Если вы запустите [L1.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L1.ipynb), [L2.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L2.ipynb) или [Simplex.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Simplex.ipynb) в разделе кода, вы воспроизведете экспериментальные результаты, полученные в работе.  
+В этом репозитории представлен код написанный в рамках выпускной квалификационной работы. Если вы запустите [L1.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L1.ipynb), [L2.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L2.ipynb) или [Simplex.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Simplex.ipynb) в разделе code, то вы воспроизведете экспериментальные результаты, полученные в работе.  
 
-![JAGUAR](./code/figures/Non-stochastics.png)
+![JAGUAR](./code/figures/Non_stochastics_FW_LogReg_Simplex.pdf)
 
