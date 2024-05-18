@@ -1,8 +1,8 @@
-| Name of the problem under study | New Aspects of Black Box Conditional Gradient: Variance Reduction and One Point Feedback |
+| Название исследуемой задачи | Применение стохастической аппроксимации нулевого порядка с техникой запоминания в алгоритме Франка-Вульфа |
 | :---: | :---: |
-| Type of scientific work | Bachelor's Diploma |
-| Author | Bogdanov Alexander Ivanovich |
-| Scientific director | Ph.D. Alexander Beznosikov |
+| Тип научной работы | Баколаврский диплом |
+| Автор | Богданов Александр Иванович |
+| Научный руководитель | к.ф.-м.н. Безносиков Александр Николаевич |
 
 # Description
 
