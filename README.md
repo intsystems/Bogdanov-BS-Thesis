@@ -10,10 +10,9 @@
 
 # Установка
 
-- Second way
-1. `git clone` this repository.
-2. Create new `conda` environment and activate it
-3. Run 
+1. `git clone` этот репозиторий
+2. Создайте новое окружение `conda` и активируйте его
+3. Запустите 
 ```bash
 pip install -r requirements.txt
 pip install ipykernel
@@ -22,7 +21,7 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 # Содержание
 
-This repository provides code for reproducing experiments that were performed as part of scientific work in the fall semester of 2023. If you run [Experiments.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Experiments.ipynb) in the code directory, you will reproduce the experimental results obtained in the article. 
+В этом репозитории представлен код для воспроизведения экспериментов, которые были выполнены в рамках выпускной квалификационной работы. Если вы запустите [L1.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L1.ipynb), [L2.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/L2.ipynb) или [Simplex.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Simplex.ipynb) в разделе кода, вы воспроизведете экспериментальные результаты, полученные в работе.  
 
 ![JAGUAR](./code/figures/Non-stochastics.png)
 
