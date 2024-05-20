@@ -21,7 +21,7 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 # Содержание
 
-В этом репозитории представлен код, написанный в рамках выпускной квалификационной работы. Если вы запустите [Experiments.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/Experiments.ipynb) в каталоге кода, то воспроизведете экспериментальные результаты, полученные в статье.  
+В этом репозитории представлен код, написанный в рамках выпускной квалификационной работы. Если вы запустите [L1.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/L1.ipynb), [L2.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/L2.ipynb) и [Simplex.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/Simplex.ipynb) в каталоге кода, то воспроизведете экспериментальные результаты, полученные в работе.  
 
 ![JAGUAR](./code/figures/Non-stochastics.png)
 
