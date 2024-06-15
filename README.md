@@ -25,9 +25,3 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 ![JAGUAR](./figures/None_stochastics_FW_LogReg_L2_MNIST.png)
 ![JAGUAR](./figures/None_stochastics_FW_LogReg_Simplex_MNIST.png)
-![JAGUAR](./figures/None_stochastics_FW_SVM_L2_MNIST.png)
-![JAGUAR](./figures/None_stochastics_FW_SVM_Simplex_MNIST.png)
-![JAGUAR](./figures/Stochastics_TPF_FW_LogReg_L2_MNIST.png)
-![JAGUAR](./figures/Stochastics_TPF_FW_LogReg_Simplex_MNIST.png)
-![JAGUAR](./figures/Stochastics_TPF_FW_SVM_L2_MNIST.png)
-![JAGUAR](./figures/Stochastics_TPF_FW_SVM_Simplex_MNIST.png)
