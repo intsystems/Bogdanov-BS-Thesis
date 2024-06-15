@@ -1,456 +1,353 @@
 \section{Основные результаты}
 
-\subsection{\texttt{JAGUAR}. Детерминированный случай} \label{subsection:JAGUAR_nonstoch}
+\subsection{\texttt{JAGUAR}} \label{section:JAGUAR}
     
-        We reviewed above the gradient approximation techniques using finite differences \eqref{eq:turtle_approx} and \eqref{eq:l2_approx}. In this section, we introduce new gradient estimation technique \texttt{JAGUAR}, based on the already investigated methods and using memory from previous iterations. We define such additional notation that is used in our algorithm of gradient approximation:
+    Выше были рассмотрены методы аппроксимации градиента с помощью конечных разностей \eqref{eq:full_approx} и \eqref{eq:l2_approx}. В этом разделе представлены новые методы оценки градиента \texttt{JAGUAR}: \texttt{JAGUAR-d} для детерминированной и \texttt{JAGUAR-s} для стохастической задач, основанные на уже исследованных методах и использующие память предыдущих итераций.
+    
+    Идея метода \texttt{JAGUAR} схожа с известными методами уменьшения дисперсии, такими как SAGA \cite{defazio2014saga} или SVRG \cite{johnson2013accelerating}, но эти методы применяют уменьшение дисперсии к батчам. Однако при оптимизации нулевого порядка нужно аппроксимировать градиент, поэтому необходимо применить технику уменьшения дисперсии к координатам \cite{hanzely2018sega}. Следовательно, метод \texttt{JAGUAR} использует память некоторых координат предыдущих градиентов, а не запоминает градиенты по батчам в прошлых точках. В литературе уже есть работы, сочетающие оптимизацию нулевого порядка и уменьшение дисперсии, но суть их в том, что они меняют вычисление градиента на безградиентную аппроксимацию \eqref{eq:full_approx} в пакетных алгоритмах с уменьшением дисперсии, таких как SVRG или SPIDER \cite{ji2019improved}, а не используют технику уменьшения дисперсии для координат, как в алгоритме \ref{alg:JAGUAR_nonstoch}.  
+    
+    Для детерминированного алгоритма аппроксимации используется разностная схема:
+    \begin{align} \label{eq:opf_nonstoch}
+        \widetilde{\nabla}_i f_\delta (x) :=  \frac{f_\delta (x + \tau e_i) - f_\delta (x - \tau e_i)}{2 \tau} e_i,
+    \end{align}
+    где $e_i$ -- вектор из стандартного базиса в $\mathbb{R}^d$. Сам алгоритм аппроксимации градиента для детерминированной задачи \texttt{JAGUAR-d} в точке $x$ выглядит так (алгоритм \ref{alg:JAGUAR_nonstoch}):
 
-        \begin{equation}\label{eq:opf_nonstoch}
-            \widetilde{\nabla}_if_\delta(x) :=  \dfrac{f_\delta(x + \tau e_i) - f_\delta(x - \tau e_i)}{2 \tau} e_i,
-        \end{equation}
-
-
-
-        where $e_i$ is a vector from is standard basis in $\mathbb{R}^d$ as was mentioned above. Now we can present an algorithm of gradient approximation in the point $x$ (Algorithm \ref{alg:JAGUAR_nonstoch}):
-
-        \begin{algorithm}[H]
-    	\caption{\texttt{JAGUAR} gradient approximation. Deterministic case}
-    	\label{alg:JAGUAR_nonstoch}
+    \begin{algorithm}[H]
+        \caption{\texttt{JAGUAR-d}} \label{alg:JAGUAR_nonstoch}
         \begin{algorithmic}[1]
-            \State {\bf Input:} $x, h \in \mathbb{R}^d$ \label{line:0}
-            \State Sample $i \in \overline{1, d}$ independently and uniform
-            \State Compute $\widetilde{\nabla}_i f_{\delta}(x) = \frac{f_{\delta}(x + \tau e_i) - f_{\delta}(x - \tau e_i)}{2 \tau} e_i$
-            \State $h = h - \dotprod{h}{e_i} e_i + \widetilde{\nabla}_i f_{\delta}(x)$ \label{line:h^k_nonstoch}
+            \State \textbf{Вход:} $x, h \in \mathbb{R}^d$
+            \State Сэмплируем $i \in \overline{1, d}$ равномерно и независимо
+            \State Считаем $\widetilde{\nabla}_i f_\delta (x) = \frac{f_\delta (x + \tau e_i) - f_\delta (x - \tau e_i)}{2 \tau} e_i$
+            \State $h = h - \langle h, e_i \rangle e_i + \widetilde{\nabla}_i f_\delta (x)$
+            \State \textbf{Выход:} $h$
         \end{algorithmic}
-        \end{algorithm}
+    \end{algorithm}
 
+    В стохастической постановке \eqref{eq:problem_stoch} есть две версии разностных схем \eqref{eq:opf_nonstoch}. Первая называется двухточечной обратной связью (ДОС) \cite{duchi2015optimal, shamir2017optimal, doi:10.1137/19M1259225, beznosikov2020gradient, gasnikov2022power}, в данном случае аппроксимация градиента функции $f(x, \xi)$:
+    \begin{align} \label{eq:tpf}
+        \widetilde{\nabla}_i f_\delta (x, \xi) :=  \frac{f_\delta (x + \tau e_i, \xi) - f_\delta (x - \tau e_i, \xi)}{2 \tau} e_i.
+    \end{align}
 
-        %The idea of JAGUAR approximation is indeed similar to that of variance reduction methods like SARAH \cite{nguyen2017sarah} or SPIDER \cite{fang2018spider}. The important difference is that we have introduced a zero-order method in Frank-Wolfe based methods with batch size = $\mathcal{O}(1)$ (see next section), which no one has done before -- all previous zero-order methods used large batches $\mathcal{O}(d)$ (full-coordinate, \eqref{eq:turtle_approx}) or even $\mathcal{O}(1/\varepsilon^2)$ ($l_2$-smoothing, \eqref{eq:l2_approx}). The second important difference is that we apply the variance reduction technique to the coordinates on which we approximate the gradient, while methods like SARAH or SPIDER use it for the batches. 
+    Вторая называется одноточечной обратной связью (ООС) \cite{nemirovskij1983problem, flaxman2004online, gasnikov2017stochastic, akhavan2020exploiting, beznosikov2021one}, в этом случае аппроксимация градиента функции $f(x, \xi)$: 
+    \begin{align} \label{eq:opf}
+        \widetilde{\nabla}_i f_\delta (x, \xi^{\pm}) :=  \frac{f_\delta (x + \tau e_i, \xi^+) - f_\delta (x - \tau e_i, \xi^-)}{2 \tau} e_i.
+    \end{align}
+    
+    Ключевое различие между приближениями \eqref{eq:tpf} и \eqref{eq:opf} заключается в том, что схема \eqref{eq:tpf} более точна, но ее сложно реализовать на практике, так как для этого необходимо получить одну и ту же реализацию $\xi$ в двух разных точках $x + \tau e$ и $x - \tau e$, поэтому схема \eqref{eq:opf} более интересна с практической точки зрения. Для дальнейшего упрощения выкладок считается, что в случае двухточечной обратной связи \eqref{eq:tpf} $\xi^+ = \xi^- = \xi$. Алгоритм аппроксимации градиента для стохастической задачи \texttt{JAGUAR-s} в точке $x$ (алгоритм \ref{alg:JAGUAR_stoch}):
 
+    \begin{algorithm}[H]
+        \caption{\texttt{JAGUAR-s}} \label{alg:JAGUAR_stoch}
+        \begin{algorithmic}[1]
+            \State \textbf{Вход:} $x, h, g \in \mathbb{R}^d$; $\eta \in [0, 1]$
+            \State Сэмплируем $i \in \overline{1, d}$ равномерно и независимо
+            \State Сэмплируем $\xi$: $\xi^+$ и $\xi^-$ независимо (в ДОС $\xi^+ = \xi^-$)
+            \State Считаем $\widetilde{\nabla}_i f_\delta (x, \xi^\pm) = \frac{f_\delta (x + \tau e_i, \xi^+) - f_\delta (x - \tau e_i, \xi^-)}{2 \tau} e_i$
+            \State $h = h - \langle h, e_i \rangle e_i + \widetilde{\nabla}_i f_\delta (x, \xi^+, \xi^-)$
+            \State $\rho = h - d \cdot \langle h, e_i \rangle e_i + d \cdot \widetilde{\nabla}_i f_\delta (x, \xi^+, \xi^-)$
+            \State $g = (1 - \eta) g + \eta \rho$ 
+            \State \textbf{Выход:} $g, h$
+        \end{algorithmic}
+    \end{algorithm}
 
-        The idea behind the \texttt{JAGUAR} method is similar to well-known variance reduction techniques such as SAGA \cite{defazio2014saga} or SVRG \cite{johnson2013accelerating}. 
-        %However, this methods apply variance reduction to the batches. 
-        However, in the zero-order optimization we need to approximate the gradient, therefore, we need to apply the technique of variance reduction to coordinates \cite{hanzely2018sega}. Consequently, the \texttt{JAGUAR} method uses the memory of some coordinates of the previous gradients rather than memorizes gradients by batches in past points.
-        %Так как в оптимизации нулевого порядка нам нужно аппроксимировать градиент, то нужно применять технику редукции дисперсии к координатам. Соответственно метод JAGUAR использует память о каких-то координатах предыдущих градиентов, а не о ...
-        There are already works in the literature that combines zero-order optimization and variance reduction, but the essence of these papers is that they change the gradient calculation to the gradient-free approximation \eqref{eq:turtle_approx} in the batch variance reduced  algorithms such as SVRG or SPIDER \cite{ji2019improved}, rather than using variance reduction technique for coordinates as in Algorithm \ref{alg:JAGUAR_nonstoch}. 
-        % But these works use the difference schemes that were provided above, accordingly these works include the same problems that we have already described.
+    Алгоритм \texttt{JAGUAR-s} (алгоритм \ref{alg:JAGUAR_stoch}) аналогичен \texttt{JAGUAR-d} (алгоритм \ref{alg:JAGUAR_nonstoch}), но в строках 6 и 7 используются части SEGA \cite{hanzely2018sega} и моментум \cite{mokhtari2020stochastic} для сходимости в стохастическом случае.
 
+    В стохастическом случае необходима часть SEGA \cite{hanzely2018sega} $\rho_k$ в алгоритме \ref{alg:JAGUAR_stoch}, поскольку важно свойство <<несмещенности>> (см. доказательство леммы \ref{lemma:g_vs_nabla_f}), т.е.
+    \begin{align*}
+       \mathbb{E}_k \left[ \rho^k \right] = \widetilde{\nabla} f_\delta (x^k) := \sum\limits_{i = 1}^{d} \frac{f_\delta (x + \tau e_i) - f_\delta(x - \tau e_i)}{2 \tau} e_i, 
+    \end{align*}
+    где $\mathbb{E}_k \left[ \rho^k \right]$ -- условное математическое ожидание на шаге $k$. Использование части SEGA $\rho^k$ ухудшает оценки в $d$ раз по сравнению с использованием $h^k$ в качестве градиентной аппроксимации (см. леммы \ref{lemma:h_vs_nablaf} и \ref{lemma:rho_vs_nablaf}).
 
+    В стохастическом случае необходим моментум \cite{mokhtari2020stochastic} $\eta_k$ в алгоритме \ref{alg:JAGUAR_stoch}, поскольку при оценке выражения $\mathbb{E} \left[ \left\| \widetilde{\nabla} f_\delta (x, \xi_{\overline{1, d}}^\pm) - \nabla f(x) \right\|^2 \right]$ в стохастическом случае появляются выражения, содержащие $\sigma_\nabla^2$ и $\sigma_f^2$, и они мешают сходимости (см. лемму \ref{lemma:tilde_vs_notilda}).
+
+\subsubsection{Применение \texttt{JAGUAR}}
+
+    Алгоритм аппроксимации градиента \texttt{JAGUAR-d} может быть использован с любыми итерационными схемами, которые на каждом шаге $k$ возвращают новую точку $x^k$. Используя эти точки, мы получается последовательность $h^k$, которая в некотором смысле служит памятью компонент градиента из прошлых моментов. Поэтому в методах инкрементальной оптимизации имеет смысл использовать $h^k$ в качестве оценки истинного градиента $\nabla f(x^k)$. Используя следующую унифицированную схему, можно описать такой итерационный алгоритм, решающий задачу \eqref{eq:problem_nonstoch} (алгоритм \ref{alg:iter_nonstoch}).
         
-        \texttt{JAGUAR} approximation algorithm can be used with any iterative schemes that, at each step $k$, return a new point $x^k$. Using these points, we obtain the sequence $h^k$ in line 4, which serves in a sense as a memory of the gradient components from the past moments. Therefore, it make sense to use $h^k$ as the estimator of the true gradient $\nabla f(x^k)$ in incremental optimization methods. Using the following unified scheme, we can describe such iterative algorithm, that solves the problem \eqref{eq:problem_nonstoch} (Algorithm \ref{alg:iter}).
+    \begin{algorithm}[H]
+        \caption{Итерационный алгоритм с использованием \texttt{JAGUAR-d}} \label{alg:iter_nonstoch}
+        \begin{algorithmic}[1]
+            \State \textbf{Вход:} \texttt{Proc} и $h^0$
+        	\For {$k = 0, 1, 2, ... , N$}
+                \State $h^{k + 1} = \texttt{JAGUAR-d}(x^k, h^k)$
+                \State $x^{k + 1} = \texttt{Proc}(x^k, \texttt{grad\_est} = h^{k + 1})$
+            \EndFor
+            \State \textbf{Выход:} $x^{N + 1}$
+        \end{algorithmic}
+    \end{algorithm}
 
+    Используя алгоритм аппроксимации градиента \texttt{JAGUAR-s}, можно описать такой итерационный алгоритм, решающий задачу \eqref{eq:problem_nonstoch} + \eqref{eq:problem_stoch} (алгоритм \ref{alg:iter_stoch}).
 
-        \begin{wrapfigure}[7]{r}{6.5cm}
-        \vspace{-0.65cm}
-        \begin{minipage}{6.5cm}
-        \vspace{-0.4cm}
-        \begin{algorithm}[H]
-    	\caption{Iterative algorithm using gradient estimator via \texttt{JAGUAR}}
-    	\label{alg:iter}
-        	\begin{algorithmic}[1]
-                \State {\bf Input:} same as for \texttt{Proc} and $h^0$
-        	    \For {$k = 0, 1, 2, ... , N$}
-                    \State $h^{k+1}$ = \texttt{JAGUAR}($x^k$, $h^k$)
-                    \State $x^{k+1}$ = \texttt{Proc}($x^k$, \texttt{grad\_est} = $h^{k+1}$)
-                \EndFor
-        	\end{algorithmic}
-        \end{algorithm}
-        \end{minipage}
-        \end{wrapfigure}
+    \begin{algorithm}[H]
+        \caption{Итерационный алгоритм с использованием \texttt{JAGUAR-s}} \label{alg:iter_stoch}
+        \begin{algorithmic}[1]
+            \State \textbf{Вход:} \texttt{Proc} и $h^0$
+        	\For {$k = 0, 1, 2, ... , N$}
+                \State $h^{k + 1}, g^{k + 1} = \texttt{JAGUAR-s}(x^k, h^k, g^k, \eta_k)$
+                \State $x^{k + 1} = \texttt{Proc}(x^k, \texttt{grad\_est} = g^{k + 1})$
+            \EndFor
+            \State \textbf{Выход:} $x^{N + 1}$
+        \end{algorithmic}
+    \end{algorithm}
 
-        In Algorithm \ref{alg:iter}, \texttt{Proc}($x^k$, \texttt{grad\_est}) is some sequence of actions that translates $x^k$ into $x^{k+1}$ by using \texttt{grad\_estimator} as true gradient. Now we start to analyze \texttt{JAGUAR} gradient approximation (Algorithm \ref{alg:JAGUAR_nonstoch}). Our goal is to estimate the closeness of the true gradient $\nabla f(x^k)$ and the output of the \texttt{JAGUAR} algorithm $h^k$ at step $k$.
+    В алгоритмах \ref{alg:iter_nonstoch} и \ref{alg:iter_stoch}, \texttt{Proc}($x^k$, \texttt{grad\_est}) -- это некоторая последовательность действий, которая переводит $x^k$ в $x^{k + 1}$, используя \texttt{grad\_est} в качестве истинного градиента. Ниже приведен анализ аппроксимации градиента \texttt{JAGUAR}. Необходимо оценить близость истинного градиента $\nabla f(x^k)$ / $\nabla f(x^k, \xi)$ и выхода алгоритма \texttt{JAGUAR} $h^k$ / $g^k$ на шаге $k$. 
+    
+\subsubsection{Анализ аппроксимаций \texttt{JAGUAR}}
 
-        \begin{lemma}
-        \label{lemma:h_vs_nablaf_nonstoch}
-            For $x^k$ and $h^k$, generated by Algorithm \ref{alg:iter}, the following inequality holds
+    Для анализа алгоритма \ref{alg:iter_nonstoch} используется обозначение:
+    \begin{align*}
+        \widetilde{\nabla} f_\delta (x) := \sum\limits_{i = 1}^d \frac{f_\delta (x + \tau e_i) - f_\delta (x - \tau e_i)}{2 \tau} e_i. 
+    \end{align*}
 
-            \begin{equation}
-            \label{eq:h_vs_nabla_nonstoch}
-            \begin{split}
-            H_{k+1}
-                    &\leq
-                    \left(1 - \frac{1}{2 d}\right) H_k
-                    + 2d \expect{\norms{\nabla f(x^{k+1}) - \nabla f(x^{k})}^2}
-                 +\expect{\norms{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2},
-            \end{split}
-            \end{equation}
+    Для анализа алгоритма \ref{alg:iter_stoch} используется обозначение:
+    \begin{align*}
+        \widetilde{\nabla} f_\delta (x, \xi_{\overline{1, d}}^\pm) := \sum\limits_{i = 1}^d \frac{f_\delta (x + \tau e_i, \xi_i^+) - f_\delta (x - \tau e_i, \xi_i^-)}{2 \tau} e_i.
+    \end{align*}
 
-            where we use notations $H_k := \expect{\norms{h^k - \nabla f(x^k)}^2}$ and 
-
-            \begin{equation}
-            \label{eq:opf_d_nonstoch}
-                \widetilde{\nabla}f_{\delta}(x) := \sum\limits_{i=1}^d \dfrac{f_{\delta}(x + \tau e_i) - f_{\delta}(x - \tau e_i)}{2 \tau} e_i. 
-            \end{equation}
-        \end{lemma}
-
-        For a detailed proof of Lemma \ref{lemma:h_vs_nablaf_nonstoch}, see proof of Lemma \ref{lemma:h_vs_nablaf} in Appendix \ref{appendix:JAGUAR} in the case of $\sigma_\nabla^2 = \sigma_f^2 = 0$ (see details in Section \ref{sect:JAGUAR_stoch}). We do not need any assumptions to satisfy Lemma \ref{lemma:h_vs_nablaf_nonstoch}, since in its proof we used only the form of Algorithm \ref{alg:JAGUAR_nonstoch}. That is, the performance of the \texttt{JAGUAR} approximation depends only on the quality of the full approximation $\widetilde{\nabla}f_{\delta}(x)$ method and the closeness of the points $x^{k+1}$ and $x^k$, generated by the Algorithm \ref{alg:iter}. According to Lemma \ref{lemma:tilde_vs_notilda} in Appendix \ref{appendix:JAGUAR}, we can estimate quality of the $\widetilde{\nabla}f_{\delta}(x)$: under Assumptions \ref{ass:smooth_nonstoch} and \ref{ass:bounded_nonstoch} for all $x \in Q$ it holds that
-
-        \begin{equation}
-        \label{eq:tmp_full_err}
-            \norms{\widetilde{\nabla}f_{\delta}(x) - \nabla f(x)}^2 
-            \leq
-            d L^2 \tau^2 
-            + \frac{2 d \Delta^2}{\tau^2} .
-        \end{equation}
-
-        Let us analyse the formula \eqref{eq:h_vs_nabla_nonstoch}, and show that using \texttt{JAGUAR} gradient approximation (Algorithm \ref{alg:JAGUAR_nonstoch}) gives us the same estimates as using $\widetilde{\nabla}f_{\delta}(x)$. Many algorithms of optimization use small enough step size $\gamma$, i.e. $\texttt{Proc}(x^k, \texttt{grad\_est}) \approx x^k$. Therefore, we can assume that $\expect{\norms{\nabla f(x^{k+1}) - \nabla f(x^{k})}^2} \approx 0$ (for specific choice of $\gamma$ see Theorem \ref{theorem:JAGUAR_nonstoch} in Section \ref{sect:FW_via_JAGUAR}), then we can unroll \eqref{eq:h_vs_nabla_nonstoch}:
-        $
-            \expect{\norms{h^k - \nabla f(x^k)}^2} 
-            \leq
-            \norms{h^0 - \nabla f(x^0)}^2 e^{-k/2d}
-            + 2 \norms{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2 .
-        $
-        If we consider $k \gg d$, then we can obtain that $\expect{\norms{h^k - \nabla f(x^k)}^2} = \mathcal{O}\left( \norms{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2 \right),$ i.e. it is the same estimate \eqref{eq:tmp_full_err} as for the full approximation estimator \eqref{eq:opf_d_nonstoch}, however, we now make $\mathcal{O}(1)$ oracle calls at each iteration.
+    Для упрощения выкладок в случае двухточечной обратной связи $\sigma_f = 0$, а в детерминированном случае \eqref{eq:problem_nonstoch} $\sigma_\nabla = \sigma_f = 0$.
+    
+    \begin{lemma} \label{lemma:tilde_vs_notilda}
+    
+        При предположениях \ref{ass:smooth_stoch}, \ref{ass:bounded_stoch}, \ref{ass:sigma_nabla} и \ref{ass:sigma_f} в случае ООС \eqref{eq:opf} выполняется следующее неравенство:
+        \begin{align*}
+            \mathbb{E} \left[ \left\| \widetilde{\nabla}f_{\delta}(x, \xi^+_1, \xi^-_1, ... , \xi_d^+, \xi_d^-) - \nabla f(x) \right\|^2 \right] \leq d L^2 \tau^2 + \frac{8 d \sigma_f^2}{\tau^2} + 2 d \sigma_{\nabla}^2 + \frac{2 d \Delta^2}{\tau^2}.
+        \end{align*}
         
+    \end{lemma}
 
-
-        In the next sections, we implement the \texttt{JAGUAR} approximation into the Frank-Wolfe algorithm (see Sections \ref{sect:FW_via_JAGUAR}, \ref{sect:JAGUAR_stoch}) and in Gradient Descent (see Section \ref{sect:GD}).
-
-
-\subsection{Франк-Вульф с \texttt{JAGUAR}. Детерминированный случай} \label{sect:FW_via_JAGUAR}
-
-
-        \begin{wrapfigure}[9]{r}{6cm}
-        \vspace{-0.65cm}
-        \begin{minipage}{6cm}
-        \vspace{-0.4cm}
-        \begin{algorithm}[H]
-    	\caption{\texttt{FW via JAGUAR}. Deterministic case}
-    	\label{alg:FW}
-        	\begin{algorithmic}[1]
-        		\State {\bf Input:} $x^0 \in Q$, $h^0 = \widetilde\nabla f_{\delta}(x^0)$, $\gamma_k$, $\tau$
-        	    \For {$k = 0, 1, 2, ... , N$}
-                    \State $h^{k+1} = $ \texttt{JAGUAR} $\left( x^k, h^k \right)$ \label{line:jaguar_nonstoch}
-                    \State $s^k = \underset{x \in Q}{\arg\min}\left<s, h^{k+1} \right>$ \label{line:s^k}
-                    \State $x^{k+1} = x^k + \gamma_k (s^k - x^k)$ \label{line:x^k}
-                \EndFor
-        	\end{algorithmic}
-        \end{algorithm}
-        \end{minipage}
-        \end{wrapfigure}
-
-        In this section, we introduce the Frank-Wolfe algorithm, that solves the problem \eqref{eq:problem_nonstoch} using the \texttt{JAGUAR} approximation of the gradient (Algorithm \ref{alg:JAGUAR_nonstoch}) (Algorithm \ref{alg:FW}).
-
-        Using a given form of the \texttt{Proc} function in Algorithm \ref{alg:FW}, we can unroll results of Lemma \ref{lemma:h_vs_nablaf_nonstoch} to carefully choose step size $\gamma_k$.
-
-        \begin{theorem}[Step tuning for \texttt{FW via JAGUAR} (Algorithm \ref{alg:FW}). Deterministic case]
-        \label{theorem:JAGUAR_nonstoch}
-            Consider Assumptions \ref{ass:compact} and \ref{ass:smooth_nonstoch}. For $h^k$, generated by Algorithm \ref{alg:FW}, we can take
-            $\gamma_k = 4/(k + 8d),$
-            then the following inequality holds:
-
-            %\begin{equation*}
-            %\begin{split}
-            %    H_k
-            %    &= 
-            %    \mathcal{O} \Bigg( \norms{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2
-            %    +
-            %    \frac{d^2 \max\{L^2 D^2, H_0\}}{(k + d)^2}
-            %    \Bigg),
-            %\end{split}
-            %\end{equation*}
-
-            %If additionally $h^0 = \widetilde{\nabla} f_\delta(x^0) = \sum_{i=1}^d \dfrac{f_{\delta}(x^0 + \tau e_i) - f_{\delta}(x^0 - \tau e_i)}{2 \tau} e_i$, we can obtain 
+    \begin{lemma} \label{lemma:h_vs_nablaf}
     
-            \begin{equation*}
-                \expect{\norms{h^k - \nabla f(x^k)}^2} = 
-                \mathcal{O} \left( \norms{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2
-                +\frac{d^2 L^2 D^2}{(k + 8d)^2} \right).
-            \end{equation*}
-        \end{theorem}
+        При предположениях \ref{ass:smooth_stoch}, \ref{ass:bounded_stoch}, \ref{ass:sigma_nabla} и \ref{ass:sigma_f} в случае ООС \eqref{eq:opf} выполняется следующее неравенство:
+        \begin{align*}
+            \mathbb{E} \left[ \left\| h^k - \nabla f(x^k) \right\|^2 \right]
+            \leq &
+            \left( 1 - \frac{1}{2 d} \right) \mathbb{E} \left[ \left\| h^{k - 1} - \nabla f(x^{k - 1}) \right\|^2 \right] \\
+            &+
+            2d L^2 \mathbb{E} \left[ \left\| x^k - x^{k - 1} \right\|^2 \right] \\
+            &+
+            L^2 \tau^2 + \frac{8 \sigma_f^2}{\tau^2} + 2 \sigma_{\nabla}^2 + \frac{2 \Delta^2}{\tau^2}.
+        \end{align*}
         
-        From Theorem \ref{theorem:JAGUAR_nonstoch} we can conclude that after $\mathcal{O}\left(\frac{\sqrt{d} D}{\tau}\right)$ steps we get the same estimate as in the full-approximation \eqref{eq:opf_d_nonstoch}. We now explore the convergence of Algorithm \ref{alg:FW}.
+    \end{lemma}
 
-        \begin{theorem}[Convergence rate of \texttt{FW via JAGUAR} (Algorithm \ref{alg:FW})]
-        \label{theorem:FW_nonstoch}
-            Consider Assumptions \ref{ass:compact}, \ref{ass:smooth_nonstoch}, \ref{ass:conv} and \ref{ass:bounded_nonstoch}.
-            If we take 
-            $\gamma_k = 4/(k + 8d),$
-            then \texttt{FW via JAGUAR} (Algorithm \ref{alg:FW}) has the following convergence rate
-
-            \begin{equation*}
-                \expect{f(x^{k}) - f^*}
-                =
-                \mathcal{O} \left( \frac{d \max\{L D^2, F_0 \}}{N + 8d}
-                + \sqrt{d} L D \tau + \frac{\sqrt{d} \Delta D}{\tau}\right),
-            \end{equation*}
-        \end{theorem}
-
-
-
-        The results of Theorem \ref{theorem:FW_nonstoch} are matched with results \cite{frank1956algorithm, jaggi2013revisiting} in which the authors used a true gradient and they got the result of the form $\expect{f(x^{N}) - f^*} = \mathcal{O} \left(\max\{LD^2 ; f(x^0) - f^* \}/ N \right)$. In the zero-order case, terms of the form $\mathcal{O}\left(\text{poly}(\tau) + \text{poly}(\Delta / \tau) \right)$ appear inevitably, since they are crucial for the approximation of the true gradient and always affect the convergence of zero-order methods \cite{risteski2016algorithms, sahu2018distributed, liu2018zeroth, beznosikov2020derivative}. The factor $d$, that appears in our theoretical estimators compared to the first-order result, is related to the zero-order structure of the method.
-
-
-
-        The results of Theorem \ref{theorem:FW_nonstoch} can be rewritten as an upper complexity bound on a number of iterates of Algorithm \ref{alg:FW}, using proper smoothing parameter $\tau$ and noise boundary $\Delta$.
-
-        \begin{corollary}
-        \label{cor:FW_nonstoch}
-            Under the conditions of Theorem \ref{theorem:FW_nonstoch}, choosing $\gamma_k, \tau, \Delta$ as
-
-            \begin{equation*}
-                \gamma_k = \frac{4}{k + 8d}, \text{ }
-                \tau = \mathcal{O} \left(\frac{\varepsilon}{\sqrt{d} L D} \right), \text{ }
-                \Delta = \mathcal{O} \left( \frac{\varepsilon^2}{d L D^2}\right),
-            \end{equation*}
-
-            in order to achieve an $\varepsilon$-approximate solution (in terms of $\expect{f(x^k) - f^*} \leq \varepsilon$) it takes
-
-            \begin{equation*}
-                \mathcal{O} \left( \frac{d \max\{L D^2, F_0\}}{\varepsilon} \right) \text{ iterations of Algorithm \ref{alg:FW}.}
-            \end{equation*}
-        \end{corollary}
-
-        In Corollary \ref{cor:FW_nonstoch}, the dependence $ \Delta(\varepsilon)$ was obtained, which may seem incorrect, because usually the maximum noise is given to us by the nature and we cannot reduce it. In this case, we should rewrite the dependence in the form $\varepsilon = \varepsilon(\Delta)$ and accordingly $\tau$ and $N$ start to depend on $\Delta$, not on $\varepsilon$.
-
-
-
-        \begin{corollary}
-        \label{cor:FW_nonstoch_1}
-            Under the conditions of Theorem \ref{theorem:FW_nonstoch}, choosing $\gamma_k, \tau, \varepsilon$ as
-
-            \begin{equation*}
-                \gamma_k = \frac{4}{k + 8d}, \text{ }
-                \tau = \mathcal{O} \left( \sqrt{\Delta / L}\right), \text{ }
-                \varepsilon = \mathcal{O} \left( \sqrt{d L D^2 \Delta}\right),
-            \end{equation*}
-
-            in order to achieve an $\varepsilon$-approximate solution (in terms of $\expect{f(x^k) - f^*} \leq \varepsilon$) it takes
-
-            \begin{equation*}
-                \mathcal{O} \left( \frac{\sqrt{d} \max\{L D^2, F_0\}}{\sqrt{L D^2 \Delta}} \right) \text{ iterations of Algorithm \ref{alg:FW}.}
-            \end{equation*}
-        \end{corollary}
-
-        In the rest of the corollaries in this paper, we will write the dependence $\Delta(\varepsilon)$ for the convenience of presentation, but they can always be rewritten in terms of $\varepsilon(\Delta)$.
-
-        For a detailed proof of Theorems  \ref{theorem:JAGUAR_nonstoch}, \ref{theorem:FW_nonstoch} and Corollaries \ref{cor:FW_nonstoch}, \ref{cor:FW_nonstoch_1}, see Appendix \ref{appendix:FW}. 
+    \begin{lemma} \label{lemma:rho_vs_nablaf}
+    
+        При предположениях \ref{ass:smooth_stoch}, \ref{ass:bounded_stoch}, \ref{ass:sigma_nabla} и \ref{ass:sigma_f} в случае ООС \eqref{eq:opf} выполняется следующее неравенство:
+        \begin{align*}
+            \mathbb{E} \left[ \left\| \rho^k - \nabla f(x^k) \right\|^2 \right]
+            \leq &
+            4d \mathbb{E} \left[ \left\| h^{k - 1} - \nabla f(x^{k - 1}) \right\|^2 \right] \\
+            &+
+            2d L^2 \mathbb{E} \left[ \left\|x^k - x^{k - 1} \right\|^2 \right] \\
+            &+
+            4d^2 \left( L^2 \tau^2 + \frac{8 \sigma_f^2}{\tau^2} + 2 \sigma_{\nabla}^2 + \frac{2 \Delta^2}{\tau^2} \right).
+        \end{align*}
         
-\subsection{Франк-Вульф с \texttt{JAGUAR}. Стохастический случай} \label{sect:JAGUAR_stoch}
-
-
-
-        In this section, we consider the stochastic version of the problem \eqref{eq:problem_nonstoch}:
-  
-        \begin{equation}
-        \label{eq:problem_stoch}
-            f(x) := 
-            \mathbb{E}_{\xi \sim \pi}\left[f(x, \xi)\right],
-        \end{equation}
-    
-        where $\xi$ is random vector from usually unknown distribution $\pi$. 
-        For this problem, we can not use the values of the function $f(x)$ in the difference schemes, since only $f(x, \xi)$ is available. We again assume that we do not have access to the true value of the gradient $\nabla f(x, \xi)$, and zero-order oracle returns the noisy value of the function $f(x, \xi)$: $f_{\delta}(x, \xi) := f(x, \xi) + \delta(x, \xi).$
+        В случае двухточечной обратной связи $\sigma_f = 0$.
         
+    \end{lemma}
 
-
-        In the stochastic setup \eqref{eq:problem_stoch}, two versions of the differences of scheme \eqref{eq:opf_nonstoch} appear. First one is called two point feedback (TPF) \cite{duchi2015optimal, shamir2017optimal, doi:10.1137/19M1259225, beznosikov2020gradient, gasnikov2022power}. In this case, we define such gradient approximations of the function $f(x)$:
-
-        \begin{equation}\label{eq:tpf}
-            \widetilde{\nabla}_if_\delta(x, \xi) :=  \dfrac{f_\delta(x + \tau e_i, \xi) - f_\delta(x - \tau e_i, \xi)}{2 \tau} e_i .
-        \end{equation}
-
-
-        Second one is called one point feedback (OPF) \cite{nemirovskij1983problem, flaxman2004online, gasnikov2017stochastic, akhavan2020exploiting, beznosikov2021one}. In this case, we define slightly different gradient approximation of the function $f(x)$: 
+    \begin{lemma} \label{lemma:g_vs_nabla_f}
+    
+        При предположении \ref{ass:smooth_stoch} выполняется следующее неравенство:
+        \begin{align*}
+            \mathbb{E} \left[ \left\| g^k - \nabla f(x^k) \right\|^2 \right]
+            \leq &
+            \left(1 - \eta_k \right)^2 \mathbb{E} \left[ \left\| \nabla f(x^{k - 1}) - g^{k - 1} \right\|^2 \right] \\
+            &+
+            \frac{4 L^2}{\eta_k} \mathbb{E} \left[ \left\| x^k - x^{k - 1} \right\|^2 \right] \\
+            &+
+            \eta_k^2 \mathbb{E} \left[ \left\| \nabla f(x^k) - \rho^k \right\|^2 \right] \\
+            &+
+            3 \eta_k \left( d L^2 \tau^2 + \frac{2 d \Delta^2}{\tau^2} \right).
+        \end{align*}
         
+    \end{lemma}
 
-        \begin{equation}\label{eq:opf}
-            \widetilde{\nabla}_if_\delta(x, \xi^{\pm}) :=  \dfrac{f_\delta(x + \tau e_i, \xi^+) - f_\delta(x - \tau e_i, \xi^-)}{2 \tau} e_i .
-        \end{equation}
+\subsection{Применение \texttt{JAGUAR} в алгоритме Франка-Вульфа}
+
+    Обычный алгоритм Франка-Вульфа выглядит следующим образом (алгоритм \ref{alg:FW}):
+    
+    \begin{algorithm}[H]
+        \caption{Алгоритм Франка-Вульфа} \label{alg:FW}
+        \begin{algorithmic}[1]
+            \State \textbf{Вход:} $x_0 \in Q$, $\gamma_k$
+        	\For {k = 0, 1, 2, ... , N}
+                \State $s^k = \argmin\limits_{s \in Q} \left< s, \nabla f(x^k) \right>$
+                \State $x^{k+1} = x^k + \gamma_k (s^k - x^k)$
+            \EndFor
+            \State \textbf{Выход:} $x^{N + 1}$ 
+        \end{algorithmic}
+    \end{algorithm}
+
+    На множество $Q$ накладываются общие ограничения:
+    \begin{itemize}
+        \item Множество $Q$ -- компактное, т.е.
+        \begin{align} \label{ass:compact}
+            \exists D > 0 : \forall x, y \in Q \hookrightarrow \|x - y\| \leq D
+        \end{align}
+        \item Множество $Q$ -- выпуклое, т.е.
+        \begin{align} \label{ass:convex}
+            \forall 0 \leq \alpha \leq 1, \forall x, y \in Q \hookrightarrow \alpha x + (1 - \alpha) y \in Q
+        \end{align}
+    \end{itemize}
+
+    В следующих разделах рассмотрены детерминированные и стохастические алгоритмы Франка-Вульфа с использованием аппроксимации градиента \texttt{JAGUAR}.
+
+\subsubsection{Детерминированный случай} \label{section:FW_nonstoch}
+
+    В этом разделе представляется алгоритм Франка-Вульфа, который решает задачу \eqref{eq:problem_nonstoch} с помощью аппроксимации градиента \texttt{JAGUAR} (алгоритм \ref{alg:JAGUAR_nonstoch}).
+
+    \begin{algorithm}[H]
+        \caption{Детерминированный алгоритм Франка-Вульфа с \texttt{JAGUAR}} \label{alg:FW_nonstoch}
+        \begin{algorithmic}[1]
+        	\State \textbf{Вход:} $x^0 \in Q$, $h^0 = \widetilde{\nabla} f_\delta (x^0)$, $\gamma_k$, $\tau$
+        	\For {$k = 0, 1, 2, ... , N$}
+                \State $h^{k + 1}$ = \texttt{JAGUAR-d} $\left( x^k, h^k \right)$
+                \State $s^k = \argmin\limits_{x \in Q} \left< s, h^{k + 1} \right>$
+                \State $x^{k + 1} = x^k + \gamma_k (s^k - x^k)$
+            \EndFor
+            \State \textbf{Вход:} $x^{N + 1}$
+        \end{algorithmic}
+    \end{algorithm}
+
+    Используя заданную форму функции \texttt{Proc} в алгоритме \ref{alg:FW_nonstoch}, можно тщательно подобрать шаг $\gamma_k$.
+
+    \begin{theorem}[Богданов А., Подбор шага для детерминированного алгоритма Франка-Вульфа с \texttt{JAGUAR}] \label{theorem:JAGUAR_nonstoch}
+    
+        В предположениях \ref{ass:compact}, \ref{ass:convex} и \ref{ass:smooth_nonstoch}, \ref{ass:conv_nonstoch} и \ref{ass:bounded_nonstoch} для $h^k$, полученного алгоритмом \ref{alg:FW_nonstoch}, можно взять
+        \begin{align*}
+            \gamma_k = \frac{4}{k + 8d},
+        \end{align*}
+        тогда выполняется следующая оценка:
+        \begin{align*}
+            H_k = \mathcal{O} \left( \left\| \widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k) \right\|^2 + \frac{d^2 \max\{L^2 D^2, H_0\}}{(k + d)^2} \right).
+        \end{align*}
+    
+        \noindent Если дополнительно $h^0 = \widetilde{\nabla} f_\delta (x^0) = \sum\limits_{i = 1}^d \frac{f_\delta (x^0 + \tau e_i) - f_\delta (x^0 - \tau e_i)}{2 \tau} e_i$, можно получить:
+        \begin{align*}
+            H_k = \mathcal{O} \left( \left\| \widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k) \right\|^2 +\frac{d^2 L^2 D^2}{(k + 8d)^2} \right),
+        \end{align*}
+        где используется обозначение $H_k := \mathbb{E} \left[ \left\| h^k - \nabla f(x^k) \right\|^2 \right]$.
         
-
-        The key difference between approximations \eqref{eq:tpf} and \eqref{eq:opf} is that scheme \eqref{eq:tpf} is more accurate, but it is difficult to implement in practice, because we have to get the same realization of $\xi$ at two different points $x + \tau e$ and $x - \tau e$, therefore, the scheme \eqref{eq:opf} is more interesting from a practical point of view. To simplify further, we consider that in the two point feedback case \eqref{eq:tpf} we have the same inscription as for the one point feedback \eqref{eq:opf}, but only $\xi^+ = \xi^- = \xi$.
-        We provide several assumptions required for the analysis.
-    
-        \begin{assumption}[Smoothness]\label{ass:smooth}
-            The functions $f(x, \xi)$ are $L(\xi)$-smooth on the set $Q$.
-            %, i.e. 
-            % \begin{equation*}
-            %     \forall x, y \in Q \hookrightarrow \left\|\nabla f(x, \xi) - \nabla f(y, \xi)\right\| \leq L(\xi) \left\|x-y\right\|.
-            % \end{equation*}
-            
-            We also assume that exists constant $L$ such that 
-            $
-                L^2 := \expect{L(\xi)^2}.
-            $
-        \end{assumption}
-
-        If Assumption \ref{ass:smooth} holds, then function $f(x)$ is $L$-smooth on the set $Q$, since for all $x, y \in Q$ holds that
-        $
-            \norms{\nabla f(x) - \nabla f(y)}^2 
-            = 
-            \norms{\expect{\nabla f(x, \xi) - \nabla f(y, \xi)}}^2 
-            \leq \expect{\norms{\nabla f(x, \xi) - \nabla f(y, \xi)}^2} 
-            \leq L^2 \norms{x - y}^2.
-        $
+        \noindent Подробное доказательство теоремы приведено в Приложении \ref{appendix:FW}.
         
+    \end{theorem}
 
+    Из Теоремы \ref{theorem:JAGUAR_nonstoch} следует, что после $\mathcal{O} \left( \frac{\sqrt{d} D}{\tau} \right)$ шагов получается такая же оценка, что и в полной аппроксимации.
 
-        Because the zero-order oracle returns to us noisy values of the function $f(x, \xi)$ we make common assumption on this noise.
+    \begin{theorem}[Богданов А., Скорость сходимости детерминированного алгоритма Франка-Вульфа с \texttt{JAGUAR} (Алгоритм \ref{alg:FW_nonstoch})] \label{theorem:FW_nonstoch}
+        
+        В предположениях \ref{ass:compact}, \ref{ass:convex}, \ref{ass:smooth_nonstoch}, \ref{ass:conv_nonstoch} и \ref{ass:bounded_nonstoch} можно взять
+        \begin{align*}
+            \gamma_k = \frac{4}{k + 8d},
+        \end{align*}
+        тогда алгоритм Франка-Вульфа с \texttt{JAGUAR} (алгоритм \ref{alg:FW_nonstoch}) имеет следующую скорость сходимости:
+        \begin{align*}
+            \mathbb{E} \left[ f(x^k) - f^* \right] = \mathcal{O} \left( \frac{d \max \{L D^2, F_0 \}}{N + 8d} + \sqrt{d} L D \tau + \frac{\sqrt{d} \Delta D}{\tau}\right).
+        \end{align*}
+
+        \noindent Подробное доказательство теоремы приведено в Приложении \ref{appendix:FW}.
+        
+    \end{theorem}
+
+    \begin{corollary} \label{cor:FW_nonstoch}
     
-        \begin{assumption}[Bounded oracle noise]\label{ass:bounded}
-            The noise in the oracle is bounded by some constant $\Delta > 0$, i.e.
-            $
-                \exists~ \Delta > 0 : ~\forall x \in Q \hookrightarrow \expect{|\delta(x, \xi)|^2} \leq \Delta^2 .
-            $
-        \end{assumption}
+        В соответствии с условиями теоремы \ref{theorem:FW_nonstoch}, выбирая $\gamma_k, \tau, \Delta$ как
+        \begin{align*}
+            \gamma_k = \frac{4}{k + 8d},\ \tau = \mathcal{O} \left( \frac{\varepsilon}{\sqrt{d} L D} \right),\ \Delta = \mathcal{O} \left( \frac{\varepsilon^2}{d L D^2} \right),
+        \end{align*}
+        чтобы получить $\varepsilon$-приближенное решение $(\mathbb{E} \left[f(x^k) - f^* \right] \leq \varepsilon)$ необходимо
+        \begin{align*}
+            \mathcal{O} \left( \frac{d \max \{ L D^2, F_0 \}}{\varepsilon} \right)\ \text{итераций}.
+        \end{align*}
 
-        If Assumption \ref{ass:bounded} holds, then if we define $\delta(x) := \expect{\delta(x, \xi)}$, then it holds that $|\delta(x)|^2 \leq \Delta^2$, since
-        $
-            |\delta(x)|^2 = \left| \expect{\delta(x, \xi)} \right|^2 \leq \expect{|\delta(x, \xi)|^2} \leq \Delta^2.
-        $
+        \noindent Подробное доказательство следствия приведено в Приложении \ref{appendix:FW}.
+        
+    \end{corollary}
 
+    Результаты Теоремы \ref{theorem:FW_nonstoch} совпадают с результатами \cite{frank1956algorithm, jaggi2013revisiting}, в которых авторы использовали истинный градиент и получили результат вида $\mathbb{E} \left[ f (x^N) - f^* \right] = \mathcal{O} \left( \max \{ LD^2; f(x^0) - f^* \} / N \right)$. В случае нулевого порядка неизбежно появляются члены вида $\mathcal{O} \left( \text{poly} (\tau) + \text{poly} (\Delta / \tau) \right)$, поскольку они имеют решающее значение для аппроксимации истинного градиента и всегда влияют на сходимость методов нулевого порядка \cite{risteski2016algorithms, sahu2018distributed, liu2018zeroth, beznosikov2020derivative}. Фактор $d$, который появляется в теоретических оценках по сравнению с результатом первого порядка, связан со структурой метода нулевого порядка.
 
-        Now we present two assumptions that are needed only in the stochastic case.
+\subsubsection{Стохастический случай} \label{section:JAGUAR_stoch}
+
+    В этом разделе рассматривается алгоритм Франка-Вульфа, который решает задачу \eqref{eq:problem_nonstoch} + \eqref{eq:problem_stoch} с помощью аппроксимации градиента \texttt{JAGUAR} (алгоритм \ref{alg:JAGUAR_stoch}).
+
+    \begin{algorithm}[H]
+        \caption{Стохастический алгоритм Франка-Вульфа с \texttt{JAGUAR}} \label{alg:FW_stoch}
+        \begin{algorithmic}[1]
+        	\State \textbf{Вход:} $x^0 \in Q$, $h^0 = g^0 = \widetilde{\nabla} f_\delta (x^0)$, $\gamma_k$, $\eta_k$, $\tau$
+        	\For {$k = 0, 1, 2, ... , N$}
+                \State $g^{k + 1}$, $h^{k + 1}$ = \texttt{JAGUAR-s} $\left( x^k, h^k, g^k, \eta_k \right)$
+                \State $s^k = \argmin\limits_{x \in Q} \left< s, g^{k + 1} \right>$
+                \State $x^{k + 1} = x^k + \gamma_k (s^k - x^k)$
+            \EndFor
+            \State \textbf{Вход:} $x^{N + 1}$
+        \end{algorithmic}
+    \end{algorithm}
+
+    Можно получить теорему, аналогичную теореме \ref{theorem:JAGUAR_nonstoch}, если тщательно подобрать размеры шагов $\gamma_k$ и $\eta_k$. 
     
-        \begin{assumption}[Bounded second moment of gradient] \label{ass:sigma_nabla}
-            The second moment of the $\nabla f(x, \xi)$ is bounded, i.e.
-            \begin{equation*}
-                \exists~ \sigma_{\nabla} \geq 0 : ~\forall x \in Q \hookrightarrow \expect{\norms{\nabla f(x, \xi) - \nabla f(x)}^2} \leq \sigma^2_{\nabla} .
-            \end{equation*}
-        \end{assumption}
+    \begin{theorem}[Богданов А., Подбор шага для стохастического алгоритма Франка-Вульфа с \texttt{JAGUAR}] \label{theorem:JAGUAR}
     
-        \begin{assumption}[Bounded second moment of function] \label{ass:sigma_f}
-            The second moment of the $f(x, \xi)$ is bounded, i.e.
-            \begin{equation*}
-                \exists~ \sigma_{f} \geq 0 : ~\forall x \in Q \hookrightarrow \expect{\left|f(x, \xi) - f(x) \right|^2} \leq \sigma^2_{f} .
-            \end{equation*}
-        \end{assumption}
-    
-        In the two point feedback case \eqref{eq:tpf}, we do not need Assumption \ref{ass:sigma_f}, therefore, for simplicity of future exposition we assume that in this case Assumption \ref{ass:sigma_f} is fulfilled with $\sigma_f = 0$.
-    
-        Now we can present the Frank-Wolfe algorithm, that solves the problem \eqref{eq:problem_nonstoch} + \eqref{eq:problem_stoch} using \texttt{JAGUAR} gradient approximation.
-    \vspace{-0.2cm}
-        \begin{algorithm}[H]
-    	\caption{\texttt{FW via JAGUAR}. Stochastic case}
-    	\label{alg:FW_stoch}
-        	\begin{algorithmic}[1]
-        		\State {\bf Input:} $x^0 \in Q$, $h^0 = g^0 = \widetilde\nabla f_{\delta}(x^0, \xi_{\overline{1, d}}^\pm)$, $\gamma_k$, $\eta_k$, $\tau$
-                \For {$k = 0, 1, 2, ... , N$}
-                    \State Sample $i_k \in \overline{1, d}$ independently and uniform
-                    \State Sample 2 realizations of $\xi$: $\xi^+_k$ and $\xi^-_k$ independently (in TPF $\xi_k^+= \xi_k^-$)
-    
-                    \State Compute
-                    $\widetilde{\nabla}_{i_k} f_{\delta}(x^k, \xi^\pm_k) = \frac{f_{\delta}(x^k + \tau e_{i_k}, \xi^+_k) - f_{\delta}(x^k - \tau e_{i_k}, \xi^-_k)}{2 \tau} e_{i_k}$
-                    \State $h^{k+1} = h^k - \dotprod{h^k}{e_{i_k}} e_{i_k} + \widetilde{\nabla}_{i_k} f_{\delta}(x^k, \xi^+_k, \xi^-_k)$ \label{line:h^k}
-                    \State $\rho^{k} = h^{k} - d \cdot \dotprod{h^{k}}{e_{i_k}} e_{i_k} + d \cdot \widetilde{\nabla}_{i_k} f_{\delta}(x^k, \xi^+_k, \xi^-_k)$ \label{line:rho^k}
-                    \State $g^{k+1} = (1 - \eta_k) g^k + \eta_k \rho^k$ \label{line:g^k}
-                    \State $s^k = \underset{s \in Q}{\arg\min}\left<s, g^{k+1} \right>$ \label{line:s^k_stoch}
-                    \State $x^{k+1} = x^k + \gamma_k (s^k - x^k)$ \label{line:x^k_stoch}
-                \EndFor
-        	\end{algorithmic}
-        \end{algorithm}
+        В предположениях \ref{ass:compact}, \ref{ass:convex}, \ref{ass:smooth_stoch}, \ref{ass:conv_stoch}, \ref{ass:bounded_stoch}, \ref{ass:sigma_nabla} и \ref{ass:sigma_f} в случае одноточечной обратной связи, для $g^k$, полученного алгоритмом \ref{alg:FW_stoch}, можно взять
+        \begin{align*}
+            \gamma_k = \frac{4}{k + 8d^{3/2}} \quad \text{и} \quad \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}},
+        \end{align*}
+        тогда выполняется следующая оценка:
+        \begin{align*}
+            G_k = \mathcal{O}
+            &\Bigg(
+            \frac{L^2 D^2 + \max \{ d^2 \sigma_f^2 / \tau^2 + d^2 \sigma_\nabla^2; d G_0\}}{(k + 8d^{3 / 2})^{2 / 3}}\\
+            &+
+            \frac{d^4 \left\| h^0 - \nabla f(x^0) \right\|^2}{(k + 8d^{3 / 2})^{8 / 3}} + d L^2 \tau^2 + \frac{d \Delta^2}{\tau^2} \Bigg).
+        \end{align*}
 
-        In Input of Algorithm \ref{alg:FW_stoch}, we use a notation:
+        \noindent Если дополнительно $h^0 = g^0 = \widetilde{\nabla} f_\delta (x^0, \xi_{\overline{1, d}}^\pm)$, то получается:
+        \begin{align*}
+            G_k = \mathcal{O} \left( \left\| \widetilde{\nabla} f_\delta (x^k) - \nabla f(x^k) \right\|^2 + \frac{L^2 D^2 + d^2 \sigma_f^2 / \tau^2 + d^2 \sigma_\nabla^2}{(k + 8d^{3 / 2})^{2 / 3}} \right),
+        \end{align*}
+        где используется обозначение $G_k := \mathbb{E} \left[ \left\| g^k - \nabla f(x^k) \right\|^2 \right]$. В случае двухточечной обратной связи $\sigma^2_f = 0$.
 
-        \begin{equation*}
-                \widetilde{\nabla}f_{\delta}(x, \xi_{\overline{1, d}}^\pm) := \sum\limits_{i=1}^d \dfrac{f_{\delta}(x + \tau e_i, \xi_i^+) - f_{\delta}(x - \tau e_i, \xi_i^-)}{2 \tau} e_i.
-        \end{equation*}
+        \noindent Подробное доказательство теоремы приведено в Приложении \ref{appendix:JAGUAR}.
+        
+    \end{theorem}
     
-        In the two point feedback case \eqref{eq:tpf}, $\xi_i^+ = \xi_i^-$.
+    Полученная оценка хуже по сравнению с детерминированным случаем в Теореме \ref{theorem:JAGUAR_nonstoch}, поскольку рассматривается более сложная постановка.
+
+    \begin{theorem}[Богданов А., Скорость сходимости стохастического алгоритма Франка-Вульфа с \texttt{JAGUAR} (Алгоритм \ref{alg:FW_stoch})] \label{theorem:FW}
     
-        Algorithm \ref{alg:FW_stoch} is similar to \texttt{FW via JAGUAR} in the deterministic case (Algorithm \ref{alg:FW}), but in lines 7 and 8 we use SEGA \cite{hanzely2018sega} and  momentum \cite{mokhtari2020stochastic} parts in order to convergence in the stochastic case. 
+        В предположених \ref{ass:compact}, \ref{ass:convex}, \ref{ass:smooth_stoch}, \ref{ass:conv_stoch} \ref{ass:bounded_stoch}, \ref{ass:sigma_nabla} и \ref{ass:sigma_f} в случае одноточечной обратной связи можно взять: 
+        \begin{align*}
+           \gamma_k = \frac{4}{k + 8d^{3/2}} \quad \text{и} \quad \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}},
+        \end{align*}
+        тогда алгоритм Франка-Вульфа с \texttt{JAGUAR} (Алгоритм \ref{alg:FW_stoch}) имеет следующую скорость сходимости:
+        \begin{align*}
+            F_N = \mathcal{O} \left( \frac{L D^2 + d \sigma_f D/ \tau + d \sigma_\nabla D + \sqrt{d} F_0}{(N + 8d^{3/2})^{1/3}} + \sqrt{d} L D \tau + \frac{\sqrt{d} \Delta D}{\tau} \right),
+        \end{align*}
+        где используется обозначение $F_k := \mathbb{E} \left[ f(x^{k}) - f^* \right]$. В случае двухточечной обратной связи $\sigma_f = 0$.
 
-        $\bullet$ We need SEGA part \cite{hanzely2018sega} $\rho_k$ in Algorithm \ref{alg:FW_stoch}, because in the stochastic case, we care about the "unbiased" property (see proof of Lemma \ref{lemma:g_vs_nabla_f} in Appendix \ref{appendix:JAGUAR}), i.e. 
-        \vspace{-0.2cm}
-        $$\mathbb{E}_{k}[\rho^k] = \widetilde{\nabla} f_\delta(x^k) := \sum\limits_{i = 1}^{d} \frac{f_\delta (x + \tau e_i) - f_\delta(x - \tau e_i)}{2 \tau} e_i,$$
-
-        where $\mathbb{E}_{k}[\cdot]$ is a conditional mathematical expectation on a step $k$. Using the SEGA part $\rho^k$ deteriorates our estimates by a factor of $d$ compared to using $h^k$ as a gradient approximation (see Lemmas \ref{lemma:h_vs_nablaf} and \ref{lemma:rho_vs_nablaf} in Appendix \ref{appendix:JAGUAR}), but we have to accept this factor.
-
-        $\bullet$
-        We need momentum part \cite{mokhtari2020stochastic} $\eta_k$ in Algorithm \ref{alg:FW_stoch}, because in evaluating the expression of $\expect{\norms{\widetilde{\nabla}f_{\delta}(x, \xi_{\overline{1, d}}^\pm) - \nabla f(x)}^2}$ in the stochastic case appear expressions containing $\sigma_\nabla^2$ and $\sigma_f^2$ and they interfere with convergence (see Lemma \ref{lemma:tilde_vs_notilda} in Appendix \ref{appendix:JAGUAR}). This is common issue in the stochastic Frank-Wolfe-based methods (see \cite{mokhtari2020stochastic}). 
-
-        We can provide a theorem, similar to Theorem \ref{theorem:JAGUAR_nonstoch}, where we carefully choose step sizes $\gamma_k$ and $\eta_k$. 
-    
-        \begin{theorem}[Step tuning for \texttt{FW via JAGUAR}. Stochastic case]
-        \label{theorem:JAGUAR}
-            Consider Assumptions \ref{ass:compact}, \ref{ass:smooth}, \ref{ass:bounded}, \ref{ass:sigma_nabla} and \ref{ass:sigma_f} in the one point feedback case. For $x^k$ generated by Algorithm \ref{alg:FW_stoch}, we can take  
+        \noindent Подробное доказательство теоремы приведено в Приложении \ref{appendix:FW}.
             
-            $$\gamma_k = \frac{4}{k + 8d^{3/2}} ~~\text{ and }~~ \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}},$$
-    
-            then, the following inequality holds:
+    \end{theorem}
 
-            %\begin{equation*}
-            %\begin{split}
-            %    G_k
-            %    &=
-            %    \mathcal{O} \Bigg(\frac{L^2 D^2 + \max\{d^2 \sigma_f^2/ \tau^2 + d^2 \sigma_{\nabla}^2 ; d G_0\}}{(k + 8d^{3/2})^{2/3}}
-            %    \\&\qquad\quad+
-            %    \frac{d^4 \norms{h^0 - \nabla f(x^0)}^2}{(k + 8d^{3/2})^{8/3}}
-            %    +
-            %    d L^2 \tau^2 + \frac{d \Delta^2}{\tau^2} \Bigg),
-            %\end{split}
-            %\end{equation*}
+    \begin{corollary} \label{cor:FW}
+        В соответствии с условиями теоремы \ref{theorem:FW}, выбирая $\gamma_k, \eta_k, \tau, \Delta$ как
+        \begin{align*}
+            \gamma_k = \frac{4}{k + 8d^{3/2}},\ \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}},\ \tau = \mathcal{O} \left(\frac{\varepsilon}{\sqrt{d} L D} \right),\ \Delta = \mathcal{O} \left( \frac{\varepsilon^2}{d L D^2}\right),
+        \end{align*}
+        чтобы получить $\varepsilon$-приближенное решение $(\mathbb{E} \left[ f(x^N) - f^* \right] \leq \varepsilon)$ необходимо
+        \begin{align*}
+            \mathcal{O} \left( \max \left\{ \left[ \frac{L D^2 + d \sigma_\nabla D + \sqrt{d} (f(x^0) - f^*)}{\varepsilon} \right]^3; \frac{d^{9 / 2} \sigma_f^3 L^3 D^6}{\varepsilon^6} \right\} \right)\ \text{итераций}.
+            \end{align*}
 
-            %If additionaly $h^0 = g^0 = \widetilde{\nabla} f_\delta(x^0, \xi_{\overline{1, d}}^\pm)$ we can obtain
+        \noindent В случае двухточечной обратной связи $\sigma_f = 0$ и последнее выражение принимает вид
+        \begin{align*}
+            \mathcal{O} \left( \left[ \frac{L D^2 + d \sigma_\nabla D + \sqrt{d} (f(x^0) - f^*)}{\varepsilon} \right]^3 \right)\ \text{итераций}.
+        \end{align*}
 
-            \begin{equation*}
-                G_k
-                =
-                \mathcal{O} \left(\norm{\widetilde{\nabla}f_{\delta}(x^k) - \nabla f(x^k)}^2
-                +\frac{L^2 D^2 + d^2 \sigma_f^2/ \tau^2 + d^2 \sigma_{\nabla}^2}{(k + 8d^{3/2})^{2/3}} 
-                \right),
-            \end{equation*}
-    
-            where we use the notation $G_k := \expect{\norms{g^k - \nabla f(x^k)}^2}$. In the two point feedback case, $\sigma^2_f = 0$.
+        \noindent Подробное доказательство следствия приведено в Приложении \ref{appendix:FW}.
             
-        \end{theorem}
-    
-        We obtain worse estimates compared to the deterministic case in Theorem \ref{theorem:JAGUAR_nonstoch}, since we consider a more complicated setup. We now explore the convergence of Algorithm \ref{alg:FW_stoch}.
+    \end{corollary}
 
-        \begin{theorem}[Convergence rate of \texttt{FW via JAGUAR} (Algorithm \ref{alg:FW_stoch}). Stochastic case]
-        \label{theorem:FW}
-            Consider Assumptions \ref{ass:compact}, \ref{ass:conv},  \ref{ass:smooth}, \ref{ass:bounded}, \ref{ass:sigma_nabla} and \ref{ass:sigma_f} in the one point feedback case. We can take 
-            
-            $$\gamma_k = \frac{4}{k + 8d^{3/2}} ~~\text{ and }~~ \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}},$$
-            
-            then we \texttt{FW via JAGUAR} (Algorithm \ref{alg:FW_stoch}) has the following convergence rate
-    
-            \begin{equation*}
-            \begin{split}
-                F_N
-                =
-                \mathcal{O} \Bigg( &\frac{L D^2 + d \sigma_f D/ \tau + d\sigma_{\nabla} D + \sqrt{d} F_0}{(N + 8d^{3/2})^{1/3}}
-                + \sqrt{d} L D \tau + \frac{\sqrt{d} \Delta D}{\tau}\Bigg),
-            \end{split}
-            \end{equation*}
+    Поскольку в алгоритме аппроксимации \texttt{JAGUAR} (алгоритм \ref{alg:FW_stoch}) использовались части SEGA и импульса, то не получается та же скорость сходимости, что и в теоремах \ref{theorem:JAGUAR_nonstoch} и \ref{theorem:FW_nonstoch} даже при переходе от стохастических к детерминированным настройкам, т.е, при задании $\sigma_\Delta = \sigma_f = 0$ в теоремах \ref{theorem:JAGUAR} и \ref{theorem:FW}. Те же проблемы возникают и в случае первого порядка \cite{mokhtari2020stochastic, zhang2020one}, это связано с трудностями реализации стохастического градиента в алгоритмах типа Франка-Вульфа. 
 
-            where we use the notation $F_k := \expect{f(x^{k}) - f^*}$. In the two point feedback case, $\sigma^2_f = 0$.
-            
-        \end{theorem}
-
-        \begin{corollary}
-        \label{cor:FW}
-            Under the conditions of Theorem \ref{theorem:FW}, choosing $\gamma_k, \eta_k, \tau, \Delta$ as
-
-            \begin{equation*}
-            \begin{split}
-                &\gamma_k = \frac{4}{k + 8d^{3/2}}, \text{ }
-                \eta_k = \frac{4}{(k + 8d^{3/2})^{2/3}}, \text{ }
-                \tau = \mathcal{O} \left(\frac{\varepsilon}{\sqrt{d} L D} \right), \text{ }
-                \Delta = \mathcal{O} \left( \frac{\varepsilon^2}{d L D^2}\right),
-            \end{split}
-            \end{equation*}
-
-            in order to achieve an $\varepsilon$-approximate solution (in terms of $\expect{f(x^N) - f^*} \leq \varepsilon)$ it takes
-            
-            \begin{equation*}
-            \begin{split}
-                &\mathcal{O} \Bigg( \max\Bigg\{ \left[ \frac{L D^2 + d\sigma_{\nabla} D + \sqrt{d} (f(x^0) - f^*)}{\varepsilon}\right]^3; 
-                \frac{d^{9/2} \sigma_f^3 L^3D^6}{\varepsilon^6} \Bigg\}\Bigg) \text{ iterations of Algorithm \ref{alg:FW_stoch}.}
-            \end{split}
-            \end{equation*}
-
-            In the two point feedback case, $\sigma_f^2 = 0$ and the last equation takes form
-            
-            \begin{equation*}
-                \mathcal{O} \left( \left[ \frac{L D^2 + d\sigma_{\nabla} D + \sqrt{d} (f(x^0) - f^*)}{\varepsilon}\right]^3 \right).
-            \end{equation*}
-        \end{corollary}
-
-        %As we wrote above, Theorems \ref{theorem:JAGUAR} and \ref{theorem:FW} do not give estimates as in the deterministic case (see Theorems \ref{theorem:JAGUAR_nonstoch} and \ref{theorem:FW_nonstoch}). This is related to the more complicated stochastic problem \eqref{eq:problem_stoch}, which forces us to add SEGA and momentum parts to the \texttt{JAGUAR} approximation algorithm. The same problems arise with first-order methods \cite{mokhtari2020stochastic} but it is possible to achieve speedup to $N = \mathcal{O}(1/\varepsilon^2)$ \cite{zhang2020one}, but introducing zero-order techniques into such methods we consider as future research.
-
-        Since we used SEGA and momentum parts in \texttt{JAGUAR} approximation algorithm (Algorithm \ref{alg:FW_stoch}) we do not get the same convergence rate as in Theorems \ref{theorem:JAGUAR_nonstoch} and \ref{theorem:FW_nonstoch} even when we switch from stochastic to deterministic setups, i.e., when setting $\sigma_\Delta = \sigma_f = 0$ in Theorems \ref{theorem:JAGUAR} and \ref{theorem:FW}. The same problems arise in the first-order case \cite{mokhtari2020stochastic, zhang2020one}, it is due to the difficulties of implementing the stochastic gradient in FW-type algorithms. 
-        % It is possible to achieve speedup to $N = \mathcal{O}(1/\varepsilon^2)$ \cite{zhang2020one}, but introducing zero-order techniques into such methods we consider as future research.
-
-        We can apply the deterministic \texttt{JAGUAR} method (Algorithm \ref{alg:JAGUAR_nonstoch}) to the stochastic problem \eqref{eq:problem_stoch} and obtain the same estimates as in Theorems \ref{theorem:JAGUAR_nonstoch} and \ref{theorem:FW_nonstoch}, only the smoothed term of the form $\mathcal{O}\left(\text{poly}(\tau) + \text{poly}(\Delta / \tau) \right)$ will contain summands of the form $\mathcal{O}\left(\text{poly}(\sigma_\Delta^2) + \text{poly}(\sigma_f^2 / \tau) \right)$ Therefore, if $\sigma_\Delta^2, \sigma_f^2 \sim \Delta$, then deterministic Algorithm \ref{alg:JAGUAR_nonstoch} is suitable for the stochastic problem \eqref{eq:problem_stoch}. However, this means that we need to use big batches, therefore, we forced to use SEGA and momentum parts in the \texttt{JAGUAR} approximation. 
-
-        For a detailed proof of Theorem \ref{theorem:JAGUAR}, see Appendix \ref{appendix:JAGUAR}, for Theorem \ref{theorem:FW} and Corollary \ref{cor:FW}, see Appendix \ref{appendix:FW}. 
+    Можно применить \texttt{JAGUAR-d} (алгоритм \ref{alg:JAGUAR_nonstoch}) к стохастической задаче \eqref{eq:problem_stoch} и получить те же оценки, что и в Теоремах \ref{theorem:JAGUAR_nonstoch} и \ref{theorem:FW_nonstoch}, только сглаженный член вида $\mathcal{O} \left( \text{poly} (\tau) + \text{poly} (\Delta / \tau) \right)$ будет содержать слагаемые вида $\mathcal{O} \left( \text{poly}(\sigma_\Delta^2) + \text{poly} (\sigma_f^2 / \tau) \right)$. Поэтому, если $\sigma_\Delta^2, \sigma_f^2 \sim \Delta$, то детерминированный алгоритм \ref{alg:JAGUAR_nonstoch} подходит для стохастической задачи \eqref{eq:problem_stoch}. Однако это означает, что нужно использовать большие батчи, поэтому необходимо использовать SEGA и импульсные части в \texttt{JAGUAR-s} аппроксимации.
