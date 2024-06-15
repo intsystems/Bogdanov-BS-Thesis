@@ -1,4 +1,4 @@
-| Название исследуемой задачи | Применение стохастической аппроксимации нулевого порядка с техникой запоминания в алгоритме Франка-Вульфа |
+| Название исследуемой задачи | Аппроксимации градиента с помощью оракула нулевого порядка и техники запоминания |
 | :---: | :---: |
 | Тип научной работы | Выпускная квалификационная работа |
 | Автор | Богданов Александр Иванович |
@@ -23,8 +23,11 @@ python -m ipykernel install --user --name <env_name> --display-name <env_name>
 
 В этом репозитории представлен код, написанный в рамках выпускной квалификационной работы. Если вы запустите [L1.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/L1.ipynb), [L2.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/L2.ipynb) и [Simplex.ipynb](https://github.com/intsystems/Bogdanov-BS-Thesis/blob/main/code/experiments/Simplex.ipynb) в каталоге кода, то воспроизведете экспериментальные результаты, полученные в работе.  
 
-![JAGUAR](./code/figures/Non_stochastics_FW_LogReg_Simplex.png)
-![JAGUAR](./code/figures/Non_stochastics_FW_Reg_Simplex.png)
-![JAGUAR](./code/figures/Stochastics_TPF_FW_Reg_L2.png)
-![JAGUAR](./code/figures/Stochastics_TPF_FW_Reg_Simplex.png)
-
+![JAGUAR](./figures/None_stochastics_FW_LogReg_L2_MNIST.png)
+![JAGUAR](./figures/None_stochastics_FW_LogReg_Simplex_MNIST.png)
+![JAGUAR](./figures/None_stochastics_FW_SVM_L2_MNIST.png)
+![JAGUAR](./figures/None_stochastics_FW_SVM_Simplex_MNIST.png)
+![JAGUAR](./figures/Stochastics_TPF_FW_LogReg_L2_MNIST.png)
+![JAGUAR](./figures/Stochastics_TPF_FW_LogReg_Simplex_MNIST.png)
+![JAGUAR](./figures/Stochastics_TPF_FW_SVM_L2_MNIST.png)
+![JAGUAR](./figures/Stochastics_TPF_FW_SVM_Simplex_MNIST.png)
