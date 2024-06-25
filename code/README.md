@@ -17,8 +17,7 @@ git clone https://github.com/intsystems/Bogdanov-BS-Thesis.git
 
 Перейдите к директорию с кодом:
 ```bash
-cd code
-cd experiments
+cd code/experiments
 ```
 
 Установите необходимые пакеты:
@@ -31,7 +30,7 @@ pip install -r requirements.txt
 ```bash
 jupyter notebook
 ```
-Далее, откройте файл `L1.ipynb`, `L2.ipynb` или 'Simplex.ipynb' (зависит от множества, на котором будут воспроизводиться эксперименты) в интерфейсе Jupyter Notebook.
+Далее, откройте файл `L1.ipynb`, `L2.ipynb` или `Simplex.ipynb` (зависит от множества, на котором будут воспроизводиться эксперименты) в интерфейсе Jupyter Notebook.
 
 ## Описание файлов в `files` <a name="files-description"></a>
 
