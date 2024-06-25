@@ -11,25 +11,33 @@ def generate_matrix(d, mu, L):
     matrix = rand_ort.T @ sigma @ rand_ort
     return matrix
 
-def quadratic_func(w, A, b, c=None):
-    if c is not None:
-        return (1./2 * w.T @ A @ w - b.T @ w + c)[0]
-    else:
-        return (1./2 * w.T @ A @ w - b.T @ w)[0]
+def Reg_func(w, A, b, c):
+    return 1./2 * w.T @ A @ w - b.T @ w + c
 
-def quadratic_grad(w, A, b):
+def Reg_grad(w, A, b):
     return A @ w - b
 
-def logreg_func(w, X, y, alpha = 0.1):
+def LogReg_func(w, X, y, alpha = 0.1):
     return np.mean(np.log(1 + np.exp(- X * np.expand_dims(y, axis=1) @ np.expand_dims(w, axis=1)))) + alpha * np.square(np.linalg.norm(w))
 
-def logreg_grad(w, X, y, alpha = 0.1):
+def LogReg_grad(w, X, y, alpha = 0.1):
     return -np.mean(X * np.expand_dims(y, axis=1) / np.expand_dims((1 + np.exp(X @ w * y)), axis=1), axis = 0) + 2 * alpha * w
     
 def SVM_func(w, X, y, alpha = 0.1):
     w_new = w[:-1]
     b = w[-1]
     return 1 / 2 * np.square(np.linalg.norm(w_new)) + alpha * np.sum(np.maximum(0, y * (X @ w_new - b)))
+    
+def SVM_grad(w, X, y, alpha=0.1):
+    w_new = w[:-1]
+    b = w[-1]
+    
+    mask = y * (X @ w_new - b) > 0
+    
+    grad_w_new = w_new + alpha * np.sum(y[mask][:, np.newaxis] * X[mask], axis=0)
+    grad_b = -alpha * np.sum(y[mask])
+    
+    return np.append(grad_w_new, grad_b)
 
 def make_err_plot(optimizers_list, labels=None, title=None, markers=None, colors=None, save_name=None):
     if markers is None:
@@ -39,40 +47,31 @@ def make_err_plot(optimizers_list, labels=None, title=None, markers=None, colors
 
     x_label = "The number of oracle calls"
     y_label = "$f(x^k) / f(x^0)$"
-#    if optimizers_list[0].x_sol is not None:
-#        y_label = r'$\frac{f(x^k) - f(x^*)}{f(x^0) - f(x^*)}$'
-#    else:
-#        if optimizers_list[0].func_name == "SVM":
-#
-#        else:
-#            y_label = r'$||\nabla f(x^k)||$'
+    if optimizers_list[0].err == "f":
+        y_label = "$f(x^k) / f(x^0)$"
+    elif optimizers_list[0].err == "grad":
+        y_label = "$||\nabla f(x^k)||$"
+    elif optimizers_list[0].err == "gap":
+        y_label = "$gap(x^k)$"
     
     if labels is None:
         labels = [optimizer.gradient_approximator.name for optimizer in optimizers_list]
-        if title is None:
-            if optimizers_list[0].func_name == "SVM":
-                func_name = "SVM"
-            elif optimizers_list[0].func_name == "logreg":
-                func_name = "LogReg"
-            elif optimizers_list[0].func_name == "quadratic":
-                func_name = "Reg"
-            else:
-                raise ValueError("Unknown problem!")
+        
+    if title is None:
+        func_name = optimizers_list[0].func_name
             
-            if optimizers_list[0].set.name == "R":
-                sett = "$R^d$"
-            elif optimizers_list[0].set.name == "L2 Ball":
-                sett = "$l_2$-ball"
-            elif optimizers_list[0].set.name == "L1 Ball":
-                sett = "$l_1$-ball"
-            elif optimizers_list[0].set.name == "Simplex":
-                sett = "Simplex"
-            else:
-                raise ValueError("Unknown set!")
-                
-            title = f"{func_name} on {sett} \n {optimizers_list[0].dataset} dataset"
+        if optimizers_list[0].set.name == "R":
+            sett = "$R^d$"
+        elif optimizers_list[0].set.name == "L2 Ball":
+            sett = "$l_2$-ball"
+        elif optimizers_list[0].set.name == "L1 Ball":
+            sett = "$l_1$-ball"
+        elif optimizers_list[0].set.name == "Simplex":
+            sett = "$\Delta_d$"
         else:
-            raise ValueError("Enter labels to the plot!")
+            raise ValueError("Unknown set!")
+                
+        title = f"{func_name} on {sett} \n {optimizers_list[0].dataset} dataset"
 
     if title is not None:
         plt.title(title, fontsize=25)

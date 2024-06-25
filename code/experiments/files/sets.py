@@ -11,6 +11,9 @@ class L2Ball:
     def fw_argmin(self, nabla_f):
         return - self.R * nabla_f / np.linalg.norm(nabla_f)
         
+    def gap(self, x, nabla_f):
+        return (x + self.R * nabla_f / np.linalg.norm(nabla_f)) @ nabla_f
+        
 class R:
     def __init__(self):
         self.name = "R"
@@ -55,6 +58,13 @@ class L1Ball:
         ret[i_max] = -self.R * float(np.sign(nabla_f[i_max]))
 
         return ret
+        
+    def gap(self, x, nabla_f):
+        i_max = np.argmax(np.abs(nabla_f))
+        ret = np.zeros_like(nabla_f)
+        ret[i_max] = -self.R * float(np.sign(nabla_f[i_max]))
+        
+        return (x - ret) @ nabla_f
     
 class Simplex:
     def __init__(self):
@@ -83,6 +93,13 @@ class Simplex:
     def fw_argmin(self, nabla_f):
         i_min = np.argmin(nabla_f)
         ret = np.zeros_like(nabla_f)
-        ret[i_min] = 1.
+        ret[i_min] = 1
 
         return ret
+        
+    def gap(self, x, nabla_f):
+        i_min = np.argmin(nabla_f)
+        ret = np.zeros_like(nabla_f)
+        ret[i_min] = 1
+        
+        return (x - ret) @ nabla_f

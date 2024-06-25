@@ -5,9 +5,9 @@ from files import utils
 reload(utils)
 
 class ZO_oracle:
-    def __init__(self, func_name="quadratic", sigma=0, rounding=None, oracle_mode="tpf", args=None):
+    def __init__(self, func_name="Reg", sigma=0, rounding=None, oracle_mode="tpf", args=None):
         self.func_name=func_name
-        if func_name not in ["quadratic", "logreg", "SVM"]:
+        if func_name not in ["Reg", "LogReg", "SVM"]:
             raise ValueError(f"Wrong function name {func_name}!")
         self.sigma = sigma
         self.rounding = rounding
@@ -15,47 +15,47 @@ class ZO_oracle:
         if oracle_mode not in ["opf", "tpf"]:
             raise ValueError(f"Wrong oracle mode {oracle_mode}!")
         self.args = args
-        self.dataset=args['dataset']
-        if self.func_name == "quadratic":
+        self.dataset = args['dataset']
+        if self.func_name == "Reg":
             self.A = self.args['A']
             self.b = self.args['b']
             self.c = self.args['c']
-        elif func_name in ["logreg", "SVM"]:
+        elif func_name in ["LogReg", "SVM"]:
             self.X = self.args['X']
             self.y = self.args['y']
             self.alpha = self.args['alpha']
         self.name = f"{oracle_mode} oracle"
 
     def get_points(self, point_1, point_2):
-        if self.func_name == "quadratic":
+        if self.func_name == "Reg":
             if self.oracle_mode == "opf":
                 noise_1 = np.random.normal(loc=0, scale=self.sigma, size=1)
                 noise_2 = np.random.normal(loc=0, scale=self.sigma, size=1)
                 
-                func_1 = utils.quadratic_func(point_1, A=self.A, b=self.b, c=self.c) + noise_1
-                func_2 = utils.quadratic_func(point_2, A=self.A, b=self.b, c=self.c) + noise_2
+                func_1 = utils.Reg_func(point_1, A=self.A, b=self.b, c=self.c) + noise_1
+                func_2 = utils.Reg_func(point_2, A=self.A, b=self.b, c=self.c) + noise_2
             else:
                 noise = np.random.normal(loc=0, scale=self.sigma, size=1)
                                     
-                func_1 = utils.quadratic_func(point_1, A=self.A, b=self.b, c=self.c) + noise
-                func_2 = utils.quadratic_func(point_2, A=self.A, b=self.b, c=self.c) + noise
+                func_1 = utils.Reg_func(point_1, A=self.A, b=self.b, c=self.c) + noise
+                func_2 = utils.Reg_func(point_2, A=self.A, b=self.b, c=self.c) + noise
 
             if self.rounding is not None:
                 func_1 = np.round(func_1, int(-np.log10(self.rounding)))
                 func_2 = np.round(func_2, int(-np.log10(self.rounding)))
             
-        elif self.func_name == "logreg":
+        elif self.func_name == "LogReg":
             if self.oracle_mode == "opf":
                 noise_1 = np.random.normal(loc=0, scale=self.sigma, size=1)
                 noise_2 = np.random.normal(loc=0, scale=self.sigma, size=1)
                 
-                func_1 = utils.logreg_func(point_1, X=self.X, y=self.y, alpha=self.alpha) + noise_1
-                func_2 = utils.logreg_func(point_2, X=self.X, y=self.y, alpha=self.alpha) + noise_2
+                func_1 = utils.LogReg_func(point_1, X=self.X, y=self.y, alpha=self.alpha) + noise_1
+                func_2 = utils.LogReg_func(point_2, X=self.X, y=self.y, alpha=self.alpha) + noise_2
             else:
                 noise = np.random.normal(loc=0, scale=self.sigma, size=1)
                 
-                func_1 = utils.logreg_func(point_1, X=self.X, y=self.y, alpha=self.alpha) + noise
-                func_2 = utils.logreg_func(point_2, X=self.X, y=self.y, alpha=self.alpha) + noise
+                func_1 = utils.LogReg_func(point_1, X=self.X, y=self.y, alpha=self.alpha) + noise
+                func_2 = utils.LogReg_func(point_2, X=self.X, y=self.y, alpha=self.alpha) + noise
                 
             if self.rounding is not None:
                 func_1 = np.round(func_1, int(-np.log10(self.rounding)))
@@ -85,22 +85,24 @@ class TrueGradientApproximator:
         self.func_name = args['func_name']
         self.dataset = args['dataset']
         self.args = args
-        if self.func_name in ["quadratic"]:
+        if self.func_name in ["Reg"]:
             self.A = self.args['A']
             self.b = self.args['b']
             self.c = self.args['c']
-        elif self.func_name in ["logreg"]:
+        elif self.func_name in ["LogReg", "SVM"]:
             self.X = self.args['X']
             self.y = self.args['y']
             self.alpha = self.args['alpha']
         self.g_curr = None
-        self.name = "True grad"
+        self.name = "true grad"
     
     def approx_gradient(self, x, k): ### true gradient ###
-        if self.func_name == "quadratic":
-            grad = utils.quadratic_grad(x, A=self.A, b=self.b)
-        elif self.func_name == "logreg":
-            grad = utils.logreg_grad(x, X=self.X, y=self.y, alpha=self.alpha)
+        if self.func_name == "Reg":
+            grad = utils.Reg_grad(x, A=self.A, b=self.b)
+        elif self.func_name == "LogReg":
+            grad = utils.LogReg_grad(x, X=self.X, y=self.y, alpha=self.alpha)
+        elif self.func_name == "SVM":
+            grad = utils.SVM_grad(x, X=self.X, y=self.y, alpha=self.alpha)
         self.g_curr = np.copy(grad)
         
         return self.g_curr, 1
@@ -178,7 +180,7 @@ class TurtleApproximator:
         self.ZO_oracle = ZO_oracle
         self.gamma = gamma
         self.g_curr = None
-        self.name = "full-approximation"
+        self.name = "full approximation"
         
     def approx_gradient(self, x, k):
         d = len(x)
