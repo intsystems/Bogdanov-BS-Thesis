@@ -5,7 +5,7 @@
 ## Содержание
 1. [Установка](#installation)
 2. [Использование](#usage)
-3. [Описание файлов](#files-description)
+3. [Описание файлов `files`](#files-description)
 
 ## Установка <a name="installation"></a>
 Чтобы использовать этот проект, вам необходимо иметь Python и Jupyter Notebook установленные на вашем компьютере. Вы можете скачать Python [отсюда](https://www.python.org/downloads/) и Jupyter Notebook [отсюда](https://jupyter.org/install).
