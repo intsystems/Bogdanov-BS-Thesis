@@ -130,7 +130,7 @@ class JaguarApproximator:
                 self.h_curr += (func_1 - func_2) / (2 * self.gamma) * e_i
             
             self.g_curr = np.copy(self.h_curr) 
-            oracle_calls = d
+            oracle_calls = 2 * d
         else:
             approx_grad = np.zeros_like(x)
             batch_indices = np.random.choice(d, self.batch_size, replace=False)
