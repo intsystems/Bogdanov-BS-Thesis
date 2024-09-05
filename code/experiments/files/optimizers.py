@@ -65,11 +65,11 @@ class GDOptimizer:
                 error = utils.SVM_func(x, X=self.X, y=self.y, alpha=self.alpha)
         elif self.err == "grad":
             if self.func_name == "Reg":
-                error = utils.Reg_grad(x, A=self.A, b=self.b)
+                error = np.linalg.norm(utils.Reg_grad(x, A=self.A, b=self.b))
             elif self.func_name == "LogReg":
-                error = utils.LogReg_grad(x, X=self.X, y=self.y, alpha=self.alpha)
+                error = np.linalg.norm(utils.LogReg_grad(x, X=self.X, y=self.y, alpha=self.alpha))
             elif self.func_name == "SVM":
-                error = utils.SVM_grad(x, X=self.X, y=self.y, alpha=self.alpha)
+                error = np.linalg.norm(utils.SVM_grad(x, X=self.X, y=self.y, alpha=self.alpha))
         elif self.err == "gap":
             if self.func_name == "Reg":
                 error = self.set.gap(x, utils.Reg_grad(x, A=self.A, b=self.b))
